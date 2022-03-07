@@ -6,19 +6,22 @@ import numpy as np
 import jax
 from jax import numpy as jnp
 from brax.envs.env import Env as brax_env
-import gym
 from gym import spaces
+
+from envs.base_env import BaseEnv
 from envs.base_sampler import BaseSampler
 from util.types import *
 
 
-class ParticleAndTargetEnv(gym.Env): # TODO: define customized base Env class
+class ParticleAndTargetEnv(BaseEnv): # TODO: define customized base Env class
 
 
     def __init__(self, cfg: FrozenConfigDict, seed: int = 0):
         self.seed(seed)
         self.n_dim = 2 # for now assume 2D
         self.observation_space = self._create_observation_space()
+        self._observation_size = 2 * self.n_dim
+        self._action_size = self.n_dim
         self.action_space = spaces.Box(low=0., high=1., shape=(self.n_dim,), dtype=np.float32)
         self.particle_step_size = 0.05 # actions are the displacement of the particle
         self.reset()
@@ -26,6 +29,16 @@ class ParticleAndTargetEnv(gym.Env): # TODO: define customized base Env class
 
     def seed(self, seed):
         self._prng_key = jax.random.PRNGKey(seed)
+
+
+    @property
+    def observation_size(self, ):
+        return self._observation_size
+
+
+    @property
+    def action_size(self, ):
+        return self._action_size
 
 
     def _create_observation_space(self, ):
@@ -106,7 +119,7 @@ def circle_target_counterclockwise(state: jnp.ndarray):
 class ParticleAndTargetSampler(BaseSampler):
 
 
-    def __init__(self, cfg: FrozenConfigDict, env: Union[gym.Env, brax_env] = None, seed: int = 0):
+    def __init__(self, cfg: FrozenConfigDict, env: BaseEnv = None, seed: int = 0):
         super(ParticleAndTargetSampler, self).__init__(cfg, env, seed)
         self._policies = [
                     move_towards_target,

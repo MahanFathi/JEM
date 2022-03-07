@@ -1,17 +1,17 @@
 from abc import ABC, abstractmethod
 from typing import Union
 
-import gym
 import jax
-from brax.envs.env import Env as brax_env
 from ml_collections import FrozenConfigDict
+
+from envs.base_env import BaseEnv
 from util.types import *
 
 
 class BaseSampler(ABC):
 
 
-    def __init__(self, cfg: FrozenConfigDict, env: Union[gym.Env, brax_env] = None, seed: int = 0):
+    def __init__(self, cfg: FrozenConfigDict, env: BaseEnv, seed: int = 0):
         self.cfg = cfg
         self.horizon = cfg.SAMPLER.HORIZON
         self.batch_size = cfg.SAMPLER.BATCH_SIZE
