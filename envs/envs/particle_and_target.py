@@ -17,7 +17,7 @@ class ParticleAndTargetEnv(BaseEnv): # TODO: define customized base Env class
 
 
     def __init__(self, cfg: FrozenConfigDict, seed: int = 0):
-        self.seed(seed)
+        self._seed(seed)
         self.n_dim = 2 # for now assume 2D
         self.observation_space = self._create_observation_space()
         self._observation_size = 2 * self.n_dim
@@ -27,7 +27,7 @@ class ParticleAndTargetEnv(BaseEnv): # TODO: define customized base Env class
         self.reset()
 
 
-    def seed(self, seed):
+    def _seed(self, seed):
         self._prng_key = jax.random.PRNGKey(seed)
 
 
@@ -131,6 +131,11 @@ class ParticleAndTargetSampler(BaseSampler):
         self._batched_reset = jax.vmap(self.env.reset)
         self._sample_batch_subtrajectory = jax.vmap(self._sample_subtrajectory, in_axes=(None, 0, None))
         assert self.batch_size % len(self._policies) == 0, "cfg.SAMPLER.BATCH_SIZE not divisable by len policies."
+        self._seed(seed)
+
+
+    def _seed(self, seed):
+        self._prng_key = jax.random.PRNGKey(seed)
 
 
     def _make_step_fn(self, policy):
