@@ -22,9 +22,8 @@ class EBM(object):
         )
 
         # define derivatives
-        self.dedtheta = jax.jit(jax.jacobian(self.apply, 0))
-        self.dedz = jax.jit(jax.jacobian(self.apply, 2))
-        self.deda = jax.jit(jax.jacobian(self.apply, 3))
+        self.dedz = jax.jit(jax.vmap(jax.grad(self.apply, 2), in_axes=(None, 0, 0, 0)))
+        self.deda = jax.jit(jax.vmap(jax.grad(self.apply, 3), in_axes=(None, 0, 0, 0)))
 
 
     def init(self, key: PRNGKey):
@@ -34,3 +33,4 @@ class EBM(object):
     @partial(jax.jit, static_argnums=(0,))
     def apply(self, params: Params, s: jnp.ndarray, z: jnp.ndarray, a: jnp.ndarray):
         return self._ebm_net.apply(params, jnp.concatenate([s, z, a], axis=-1)).squeeze() # (batch_size, 1).squeeze()
+
