@@ -4,6 +4,7 @@ import ml_collections
 # Define Config Node
 # ---------------------------------------------------------------------------- #
 _C = ml_collections.ConfigDict()
+_C.seed = 0
 
 
 # ---------------------------------------------------------------------------- #
@@ -29,6 +30,9 @@ _C.EBM = ml_collections.ConfigDict()
 _C.EBM.LAYERS = [64, 32, 32, 16]
 _C.EBM.OPTION_TYPE_DISCRETE = False # it's either discrete (1-hot) or continuous
 _C.EBM.OPTION_SIZE = 1
+_C.EBM.ALPHA = 1e-3 # internal GD step size
+_C.EBM.LANGEVIN_GD = False # if True do GD with Langevin noise
+_C.EBM.K = 5 # internal optimization #steps
 
 
 
