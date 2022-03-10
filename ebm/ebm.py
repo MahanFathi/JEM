@@ -38,7 +38,7 @@ class EBM(object):
 
     @partial(jax.jit, static_argnums=(0,))
     def apply(self, params: Params, s: jnp.ndarray, z: jnp.ndarray, a: jnp.ndarray):
-        return self._ebm_net.apply(params, jnp.concatenate([s, z, a], axis=-1)).squeeze() # (batch_size, 1).squeeze()
+        return self._ebm_net.apply(params, jnp.concatenate([s, z, a], axis=-1)).squeeze() ** 2 # (batch_size, 1).squeeze()
 
 
     @partial(jax.jit, static_argnums=(0, ))
