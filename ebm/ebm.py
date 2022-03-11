@@ -11,8 +11,11 @@ from util.types import *
 
 class EBM(object):
 
+    def __init__(self, cfg: FrozenConfigDict, env: BaseEnv, key: PRNGKey = None):
 
-    def __init__(self, cfg: FrozenConfigDict, env: BaseEnv, seed: int = 0):
+        self._prng_key = key
+        if key is None:
+            self._prng_key = jax.random.PRNGKey(cfg.seed)
 
         self.cfg = cfg
         self.env = env
@@ -24,12 +27,6 @@ class EBM(object):
         # define derivatives
         self.dedz = jax.jit(jax.vmap(jax.grad(self.apply, 2), in_axes=(None, 0, 0, 0)))
         self.deda = jax.jit(jax.vmap(jax.grad(self.apply, 3), in_axes=(None, 0, 0, 0)))
-
-        self._seed(seed)
-
-
-    def _seed(self, seed):
-        self._prng_key = jax.random.PRNGKey(seed)
 
 
     def init(self, key: PRNGKey):

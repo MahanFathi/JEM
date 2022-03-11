@@ -13,11 +13,13 @@ from envs.base_sampler import BaseSampler
 from util.types import *
 
 
-class ParticleAndTargetEnv(BaseEnv): # TODO: define customized base Env class
+class ParticleAndTargetEnv(BaseEnv):
 
 
-    def __init__(self, cfg: FrozenConfigDict, seed: int = 0):
-        self._seed(seed)
+    def __init__(self, cfg: FrozenConfigDict, key: PRNGKey = None):
+
+        super(ParticleAndTargetEnv, self).__init__(cfg: FrozenConfigDict, key: PRNGKey = None)
+
         self.n_dim = 2 # for now assume 2D
         self.observation_space = self._create_observation_space()
         self._observation_size = 2 * self.n_dim
@@ -25,10 +27,6 @@ class ParticleAndTargetEnv(BaseEnv): # TODO: define customized base Env class
         self.action_space = spaces.Box(low=0., high=1., shape=(self.n_dim,), dtype=np.float32)
         self.particle_step_size = 0.05 # actions are the displacement of the particle
         self.reset()
-
-
-    def _seed(self, seed):
-        self._prng_key = jax.random.PRNGKey(seed)
 
 
     @property
@@ -119,7 +117,7 @@ def circle_target_counterclockwise(state: jnp.ndarray):
 class ParticleAndTargetSampler(BaseSampler):
 
 
-    def __init__(self, cfg: FrozenConfigDict, env: BaseEnv = None, seed: int = 0):
+    def __init__(self, cfg: FrozenConfigDict, env: BaseEnv, key: PRNGKey = None):
         super(ParticleAndTargetSampler, self).__init__(cfg, env, seed)
         self._policies = [
                     move_towards_target,
@@ -131,11 +129,6 @@ class ParticleAndTargetSampler(BaseSampler):
         self._batched_reset = jax.vmap(self.env.reset)
         self._sample_batch_subtrajectory = jax.vmap(self._sample_subtrajectory, in_axes=(None, 0, None))
         assert self.batch_size % len(self._policies) == 0, "cfg.SAMPLER.BATCH_SIZE not divisable by len policies."
-        self._seed(seed)
-
-
-    def _seed(self, seed):
-        self._prng_key = jax.random.PRNGKey(seed)
 
 
     def _make_step_fn(self, policy):

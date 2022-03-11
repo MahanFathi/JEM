@@ -10,15 +10,16 @@ from util.types import *
 
 class BaseSampler(ABC):
 
-
-    def __init__(self, cfg: FrozenConfigDict, env: BaseEnv, seed: int = 0):
+    def __init__(self, cfg: FrozenConfigDict, env: BaseEnv, key: PRNGKey = None):
         self.cfg = cfg
         self.horizon = cfg.SAMPLER.HORIZON
         self.batch_size = cfg.SAMPLER.BATCH_SIZE
 
         self.env = env
 
-        self._prng_key = jax.random.PRNGKey(seed)
+        self._prng_key = key
+        if key is None:
+            self._prng_key = jax.random.PRNGKey(cfg.seed)
 
 
     @abstractmethod
