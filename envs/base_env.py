@@ -5,6 +5,8 @@ from ml_collections import FrozenConfigDict
 from gym import Env as gym_env
 from brax.envs.env import Env as brax_env
 
+from util.types import *
+
 
 # TODO: use something that covers brax envs as well
 class BaseEnv(ABC):

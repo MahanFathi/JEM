@@ -13,7 +13,6 @@ class BaseSampler(ABC):
     def __init__(self, cfg: FrozenConfigDict, env: BaseEnv, key: PRNGKey = None):
         self.cfg = cfg
         self.horizon = cfg.SAMPLER.HORIZON
-        self.batch_size = cfg.SAMPLER.BATCH_SIZE
 
         self.env = env
 
@@ -28,5 +27,5 @@ class BaseSampler(ABC):
 
 
     @abstractmethod
-    def sample_batch_subtrajectory(self, key: PRNGKey = None):
+    def sample_batch_subtrajectory(self, batch_size: int, key: PRNGKey = None):
         pass

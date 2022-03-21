@@ -18,7 +18,7 @@ class ParticleAndTargetEnv(BaseEnv):
 
     def __init__(self, cfg: FrozenConfigDict, key: PRNGKey = None):
 
-        super(ParticleAndTargetEnv, self).__init__(cfg: FrozenConfigDict, key: PRNGKey = None)
+        super(ParticleAndTargetEnv, self).__init__(cfg, key)
 
         self.n_dim = 2 # for now assume 2D
         self.observation_space = self._create_observation_space()
@@ -118,7 +118,7 @@ class ParticleAndTargetSampler(BaseSampler):
 
 
     def __init__(self, cfg: FrozenConfigDict, env: BaseEnv, key: PRNGKey = None):
-        super(ParticleAndTargetSampler, self).__init__(cfg, env, seed)
+        super(ParticleAndTargetSampler, self).__init__(cfg, env, key)
         self._policies = [
                     move_towards_target,
                     move_away_from_target,
@@ -128,7 +128,6 @@ class ParticleAndTargetSampler(BaseSampler):
         self._sample_step_fns = [self._make_step_fn(p) for p in self._policies]
         self._batched_reset = jax.vmap(self.env.reset)
         self._sample_batch_subtrajectory = jax.vmap(self._sample_subtrajectory, in_axes=(None, 0, None))
-        assert self.batch_size % len(self._policies) == 0, "cfg.SAMPLER.BATCH_SIZE not divisable by len policies."
 
 
     def _make_step_fn(self, policy):
@@ -162,13 +161,16 @@ class ParticleAndTargetSampler(BaseSampler):
         return self._sample_subtrajectory(key, state, self._sample_step_fns[policy_id])
 
 
-    def sample_batch_subtrajectory(self, key: PRNGKey = None):
+    def sample_batch_subtrajectory(self, batch_size: int, key: PRNGKey = None):
         if key is None:
             self._prng_key, key = jax.random.split(self._prng_key)
+
+        assert batch_size % len(self._policies) == 0, "batch_size not divisable by len policies."
+
         key_sample, key_states = jax.random.split(key, 2)
-        keys_states = jax.random.split(key_states, self.batch_size)
+        keys_states = jax.random.split(key_states, batch_size)
         states = self._batched_reset(keys_states)
-        batch_size_per_policy = self.batch_size // len(self._policies)
+        batch_size_per_policy = batch_size // len(self._policies)
         states_splits = jnp.split(states, len(self._policies))
         keys_sample = jax.random.split(key_sample, batch_size_per_policy)
         batch_subtrajectories = []
