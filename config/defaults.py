@@ -45,12 +45,29 @@ _C.TRAIN.EBM = ml_collections.ConfigDict()
 _C.TRAIN.EBM.LOSS_NAME = "ML_KL" # ["loss_ML", "loss_ML_KL"]
 _C.TRAIN.EBM.DATA_SIZE = 1e6
 _C.TRAIN.EBM.LEARNING_RATE = 1e-3
+_C.TRAIN.EBM.NUM_EPOCHS = 1000
 _C.TRAIN.EBM.NUM_UPDATE_EPOCHS = 8
 _C.TRAIN.EBM.NUM_SAMPLERS = 8
-_C.TRAIN.EBM.BATCH_SIZE = 64
+_C.TRAIN.EBM.BATCH_SIZE = 2 ** 13
+_C.TRAIN.EBM.NUM_MINIBATCHES = 8
 _C.TRAIN.EBM.NORMALIZE_OBSERVATIONS = True
+_C.TRAIN.EBM.NORMALIZE_ACTIONS = True
 _C.TRAIN.EBM.LOG_FREQUENCY = 20
 
+# ---------------------------------------------------------------------------- #
+# batch guide:
+# ---------------------------------------------------------------------------- #
+#   gradient are calculated based on batches of size:
+#       `TRAIN.EBM.BATCH_SIZE // TRAIN.EBM.NUM_MINIBATCHES`.
+#   this has been made possible by pmapping batches of size:
+#       `TRAIN.EBM.BATCH_SIZE // #local_devices // TRAIN.EBM.NUM_MINIBATCHES`,
+#   across `#local_devices` local devices per CPU host/node, and
+#   calculating the mean of grad via `jax.lax.pmean`.
+#
+#   This process is repeated for `TRAIN.EBM.NUM_UPDATE_EPOCHS`
+#   times per epoch and we run `TRAIN.EBM.NUM_EPOCHS` epochs
+#   in total.
+# ---------------------------------------------------------------------------- #
 
 def get_cfg_defaults():
     return ml_collections.FrozenConfigDict(_C)
