@@ -83,7 +83,7 @@ class EBM(object):
         if key is None:
             self._prng_key, key = jax.random.split(self._prng_key)
 
-        (_, _, _, z, _), _ = jax.lax.scan(
+        (_, _, z, _, _), _ = jax.lax.scan(
             self._step_z_grad_descent,
             (params, s, z, a, key), (), self.cfg.EBM.K)
 
@@ -95,7 +95,7 @@ class EBM(object):
         if key is None:
             self._prng_key, key = jax.random.split(self._prng_key)
 
-        (_, _, _, _, a), _ = jax.lax.scan(
+        (_, _, _, a, _), _ = jax.lax.scan(
             self._step_a_grad_descent,
             (params, s, z, a, key), (), self.cfg.EBM.K)
 
