@@ -1,5 +1,6 @@
 from typing import Any
 import flax
+import optax
 from jax import numpy as jnp
 
 Params = Any
