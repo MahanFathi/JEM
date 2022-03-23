@@ -23,8 +23,8 @@ def train_ebm(
         cfg: FrozenConfigDict,
         env: BaseEnv,
         sampler: BaseSampler,
+        key: PRNGKey,
         progress_fn: Optional[Callable[[int, Dict[str, Any]], None]] = None,
-        seed: int = 0,
 ):
     """Training pipeline. Stolen from BRAX for the MOST part."""
 
@@ -36,6 +36,7 @@ def train_ebm(
     num_samplers = cfg.TRAIN.EBM.NUM_SAMPLERS
     learning_rate = cfg.TRAIN.EBM.LEARNING_RATE
     batch_size = cfg.TRAIN.EBM.BATCH_SIZE
+    num_minibatches = cfg.TRAIN.EBM.NUM_MINIBATCHES
     normalize_observations = cfg.TRAIN.EBM.NORMALIZE_OBSERVATIONS
     normalize_actions = cfg.TRAIN.EBM.NORMALIZE_ACTIONS # TODO: support normalization w/ fixed params
     log_frequency = cfg.TRAIN.EBM.LOG_FREQUENCY
@@ -57,7 +58,6 @@ def train_ebm(
         local_devices_to_use)
 
     # KEY MANAGEMENT
-    key = jax.random.PRNGKey(seed)
     key, key_model, key_eval = jax.random.split(key, 3)
     # Make sure every process gets a different random key, otherwise they will be
     # doing identical work.
@@ -65,7 +65,6 @@ def train_ebm(
     # key_models should be the same, so that models are initialized the same way
     # for different processes.
     # key_eval is also used in one process so no need to split.
-    key_debug = jax.random.PRNGKey(seed + 666)
 
     # ENERGY-BASED MODEL
     ebm = EBM(cfg, env)
@@ -114,8 +113,9 @@ def train_ebm(
         key_grad, key = jax.random.split(key)
 
         ndata = jax.tree_map(
-            lambda x: x.reshape(num_minibatches, x.shape[1], -1, *x.shape[2:]),
+            lambda x: x.reshape(num_minibatches, -1, x.shape[1], *x.shape[2:]),
             data) # TODO: is this really necessary?
+        # data: (num_minibatches, batch_size / num_minibatches, horizon, dim)
         (optimizer_state, params, _), metrics = jax.lax.scan(
             update_model, (optimizer_state, params, key_grad),
             ndata,
@@ -186,7 +186,8 @@ def train_ebm(
         t = time.time()
 
         if process_id == 0:
-            pass # TODO: do some logging/eval
+            # TODO: do some logging/eval
+            print(losses)
 
         if it == log_frequency:
             break
