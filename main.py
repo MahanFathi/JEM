@@ -22,6 +22,7 @@ def main(argv):
 
     # freeze the config
     cfg = ml_collections.FrozenConfigDict(_CONFIG.value)
+    logging.info("configuration: \n{}".format(cfg))
 
     if cfg.DEBUG:
         logging.set_verbosity(logging.DEBUG)
