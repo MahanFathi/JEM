@@ -1,7 +1,11 @@
+import os
+
 from absl import app
 from absl import flags
+from absl import logging
 
 import jax
+from jax.config import config
 import ml_collections
 from ml_collections.config_flags import config_flags
 
@@ -18,6 +22,13 @@ def main(argv):
 
     # freeze the config
     cfg = ml_collections.FrozenConfigDict(_CONFIG.value)
+
+    if cfg.DEBUG:
+        logging.set_verbosity(logging.DEBUG)
+        config.update("jax_debug_nans", True)
+        if cfg.MOCK_TPU:
+            os.environ['XLA_FLAGS'] = '--xla_force_host_platform_device_count=8'
+            jax.devices()
 
     key = jax.random.PRNGKey(cfg.seed)
     key_train, key_env = jax.random.split(key)

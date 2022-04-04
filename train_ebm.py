@@ -196,6 +196,7 @@ def train_ebm(
         previous_step = training_state.obs_normalizer_params[0][0]
         # optimization
         (training_state, ), losses, synchro = minimize_loop(training_state)
+        logging.log(logging.DEBUG, "\n***TrainingState***: \n{}".format(training_state))
         assert synchro[0], (it, training_state)
         jax.tree_map(lambda x: x.block_until_ready(), losses)
         sps = ((training_state.obs_normalizer_params[0][0] - previous_step) /

@@ -7,6 +7,9 @@ from ml_collections import FrozenConfigDict
 from ebm import EBM
 from util.types import *
 
+# from absl import logging
+# from jax.experimental import host_callback as jhcb
+
 
 # helper functions
 def _soft_plus(x):
@@ -47,7 +50,20 @@ def _infer_z_and_a(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConf
         ),
     )
 
-    return z, a.swapaxes(0, 1)
+    a = a.swapaxes(0, 1)
+
+    # if cfg.DEBUG:
+        # debug_log_fn = lambda x: logging.log(logging.DEBUG, "\n***Inferred Actions***: \n{}".format(x))
+        # jhcb.id_tap(debug_log_fn, a)
+        # debug_log_fn = lambda x: logging.log(logging.DEBUG, "\n***Inferred Options***: \n{}".format(x))
+        # jhcb.id_tap(debug_log_fn, z)
+
+        # print("\ninferred options: \n")
+        # jhcb.id_tap(print, z)
+        # print("\ninferred actions: \n")
+        # jhcb.id_tap(print, a)
+
+    return z, a
 
 
 def _cal_loss_ml_kl(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
@@ -81,13 +97,16 @@ def _cal_loss_ml_kl(params: Params, data: StepData, key: PRNGKey, cfg: FrozenCon
 def loss_ML(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
     loss_ml, _ = _cal_loss_ml_kl(params, data, key, cfg, ebm) # TODO: fix, not efficient
     return loss_ml, {
+        "loss": loss_ml,
         "loss_ml": loss_ml,
     }
 
 
 def loss_ML_KL(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
     loss_ml, loss_kl = _cal_loss_ml_kl(params, data, key, cfg, ebm)
-    return loss_ml + cfg.TRAIN.EBM.LOSS_KL_COEFF * loss_kl, {
+    loss = loss_ml + cfg.TRAIN.EBM.LOSS_KL_COEFF * loss_kl
+    return loss, {
+        "loss": loss,
         "loss_ml": loss_ml,
         "loss_kl": loss_kl,
     }
