@@ -183,11 +183,12 @@ def train_ebm(
 
     for it in range(log_frequency + 1):
         logging.info('starting iteration %s %s', it, time.time() - xt)
+        logging.info('losses: {}'.format(losses))
         t = time.time()
 
         if process_id == 0:
             # TODO: do some logging/eval
-            print(losses)
+            pass
 
         if it == log_frequency:
             break
