@@ -187,8 +187,8 @@ def train_ebm(
         t = time.time()
 
         if process_id == 0:
-            # TODO: do some logging/eval
-            pass
+            if progress_fn:
+                progress_fn(int(training_state.obs_normalizer_params[0][0]), losses)
 
         if it == log_frequency:
             break

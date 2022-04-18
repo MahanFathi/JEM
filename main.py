@@ -1,4 +1,5 @@
 import os
+from typing import Union, Mapping
 
 from absl import app
 from absl import flags
@@ -12,6 +13,7 @@ from ml_collections.config_flags import config_flags
 from envs import build_env_sampler
 from train_ebm import train_ebm
 from config.defaults import get_config
+from util import logger
 
 
 _CONFIG = config_flags.DEFINE_config_file('cfg', './config/defaults.py')
@@ -35,7 +37,14 @@ def main(argv):
     key_train, key_env = jax.random.split(key)
 
     env, sampler = build_env_sampler(cfg, key_env)
-    train_ebm(cfg, env, sampler, key_train)
+
+    # tb logging callback
+    tb_summary_writer = logger.get_summary_writer(cfg)
+    def progress_fn(num_steps: int, metrics: Mapping[str, Union[int, float]]):
+        for key, value in metrics.items():
+            tb_summary_writer.scalar(key, value, num_steps)
+
+    train_ebm(cfg, env, sampler, key_train, progress_fn)
 
 if __name__ == '__main__':
     app.run(main)
