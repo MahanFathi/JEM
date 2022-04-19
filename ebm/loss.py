@@ -66,7 +66,7 @@ def _infer_z_and_a(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConf
     return z, a
 
 
-def _eval_action_distance(a, a_pred, discount):
+def _calc_action_distance(a, a_pred, discount):
     return jnp.mean(discount ** jnp.arange(a.shape[1]) * jnp.linalg.norm((a - a_pred)))
 
 def _cal_loss_ml_kl(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
@@ -94,9 +94,25 @@ def _cal_loss_ml_kl(params: Params, data: StepData, key: PRNGKey, cfg: FrozenCon
         jax.lax.stop_gradient(z), a).mean(axis=0)
     loss_kl = loss_kl.mean()
 
-    aux = {"eval_l2_action": _eval_action_distance(data.action[:, 1:, :], a, discount)}
+    aux = {"loss_l2": _calc_action_distance(data.action[:, 1:, :], a, discount)}
 
     return loss_ml, loss_kl, aux
+
+
+def loss_L2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
+
+    # infer z and a
+    #   z: (batch_size, option_size)
+    #   a: (batch_size, horizon - 1, action_size)
+    key, key_infer = jax.random.split(key)
+    _, a = _infer_z_and_a(params, data, key, cfg, ebm)
+
+    loss_l2 = _calc_action_distance(data.action[:, 1:, :], a, discount)
+
+    return loss_l2, {
+        "loss": loss_l2,
+        "loss_l2": loss_l2,
+    }
 
 
 def loss_ML(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
@@ -115,3 +131,4 @@ def loss_ML_KL(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDi
         "loss_ml": loss_ml,
         "loss_kl": loss_kl,
     }, **aux}
+

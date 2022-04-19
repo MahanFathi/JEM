@@ -35,7 +35,7 @@ _C.EBM.OPTION_TYPE_DISCRETE = False # it's either discrete (1-hot) or continuous
 _C.EBM.OPTION_SIZE = 1
 _C.EBM.ALPHA = 1e-3 # internal GD step size
 _C.EBM.LANGEVIN_GD = False # if True do GD with Langevin noise
-_C.EBM.K = 5 # internal optimization #steps
+_C.EBM.K = 10 # internal optimization #steps
 
 
 # ---------------------------------------------------------------------------- #
@@ -44,7 +44,7 @@ _C.EBM.K = 5 # internal optimization #steps
 _C.TRAIN = ml_collections.ConfigDict()
 _C.TRAIN.MAX_DEVICES_PER_HOST = 8
 _C.TRAIN.EBM = ml_collections.ConfigDict()
-_C.TRAIN.EBM.LOSS_NAME = "loss_ML_KL" # ["loss_ML", "loss_ML_KL"]
+_C.TRAIN.EBM.LOSS_NAME = "loss_ML_KL" # ["loss_ML", "loss_ML_KL", "loss_L2"]
 _C.TRAIN.EBM.DATA_SIZE = 1e6
 _C.TRAIN.EBM.LEARNING_RATE = 1e-6
 _C.TRAIN.EBM.NUM_EPOCHS = 1000
