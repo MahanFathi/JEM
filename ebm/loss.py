@@ -21,7 +21,7 @@ def _infer_z_and_a(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConf
     Infers the option from the first transition in the data and
     then predicts future actions based on the inferred option.
 
-    data: (batch_size, horion, dim)
+    data: (batch_size, horizon, dim)
 
     returns:
         z: (batch_size, option_size)
@@ -66,6 +66,9 @@ def _infer_z_and_a(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConf
     return z, a
 
 
+def _eval_action_distance(a, a_pred, discount):
+    return jnp.mean(discount ** jnp.arange(a.shape[1]) * jnp.linalg.norm((a - a_pred)))
+
 def _cal_loss_ml_kl(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
 
     # infer z and a
@@ -91,22 +94,24 @@ def _cal_loss_ml_kl(params: Params, data: StepData, key: PRNGKey, cfg: FrozenCon
         jax.lax.stop_gradient(z), a).mean(axis=0)
     loss_kl = loss_kl.mean()
 
-    return loss_ml, loss_kl
+    aux = {"eval_l2_action": _eval_action_distance(data.action[:, 1:, :], a, discount)}
+
+    return loss_ml, loss_kl, aux
 
 
 def loss_ML(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
-    loss_ml, _ = _cal_loss_ml_kl(params, data, key, cfg, ebm) # TODO: fix, not efficient
-    return loss_ml, {
+    loss_ml, _, aux = _cal_loss_ml_kl(params, data, key, cfg, ebm) # TODO: fix, not efficient
+    return loss_ml, {**{
         "loss": loss_ml,
         "loss_ml": loss_ml,
-    }
+    }, **aux}
 
 
 def loss_ML_KL(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
-    loss_ml, loss_kl = _cal_loss_ml_kl(params, data, key, cfg, ebm)
+    loss_ml, loss_kl, aux = _cal_loss_ml_kl(params, data, key, cfg, ebm)
     loss = loss_ml + cfg.TRAIN.EBM.LOSS_KL_COEFF * loss_kl
-    return loss, {
+    return loss, {**{
         "loss": loss,
         "loss_ml": loss_ml,
         "loss_kl": loss_kl,
-    }
+    }, **aux}
