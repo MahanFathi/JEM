@@ -107,7 +107,7 @@ def loss_L2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict,
     key, key_infer = jax.random.split(key)
     _, a = _infer_z_and_a(params, data, key, cfg, ebm)
 
-    loss_l2 = _calc_action_distance(data.action[:, 1:, :], a, discount)
+    loss_l2 = _calc_action_distance(data.action[:, 1:, :], a, cfg.TRAIN.EBM.DISCOUNT)
 
     return loss_l2, {
         "loss": loss_l2,
