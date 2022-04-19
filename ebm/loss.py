@@ -67,7 +67,8 @@ def _infer_z_and_a(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConf
 
 
 def _calc_action_distance(a, a_pred, discount):
-    return jnp.mean(discount ** jnp.arange(a.shape[1]) * jnp.linalg.norm((a - a_pred)))
+    return jnp.mean(discount ** jnp.arange(a.shape[1]) * jnp.linalg.norm(a - a_pred, axis=-1))
+
 
 def _cal_loss_ml_kl(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
 
