@@ -70,7 +70,7 @@ def _calc_action_distance(a, a_pred, discount):
     return jnp.mean(discount ** jnp.arange(a.shape[1]) * jnp.linalg.norm(a - a_pred, axis=-1))
 
 
-def _cal_loss_ml_kl(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
+def _calc_loss_ml_kl_l2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
 
     # infer z and a
     #   z: (batch_size, option_size)
@@ -95,9 +95,13 @@ def _cal_loss_ml_kl(params: Params, data: StepData, key: PRNGKey, cfg: FrozenCon
         jax.lax.stop_gradient(z), a).mean(axis=0)
     loss_kl = loss_kl.mean()
 
-    aux = {"loss_l2": _calc_action_distance(data.action[:, 1:, :], a, discount)}
+    loss_l2 = _calc_action_distance(data.action[:, 1:, :], a, discount)
 
-    return loss_ml, loss_kl, aux
+    return {
+        "loss_ml": loss_ml,
+        "loss_kl": loss_kl,
+        "loss_l2": loss_l2,
+    }
 
 
 def loss_L2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
@@ -109,7 +113,6 @@ def loss_L2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict,
     _, a = _infer_z_and_a(params, data, key, cfg, ebm)
 
     loss_l2 = _calc_action_distance(data.action[:, 1:, :], a, cfg.TRAIN.EBM.DISCOUNT)
-
     return loss_l2, {
         "loss": loss_l2,
         "loss_l2": loss_l2,
@@ -117,19 +120,20 @@ def loss_L2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict,
 
 
 def loss_ML(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
-    loss_ml, _, aux = _cal_loss_ml_kl(params, data, key, cfg, ebm) # TODO: fix, not efficient
-    return loss_ml, {**{
-        "loss": loss_ml,
-        "loss_ml": loss_ml,
-    }, **aux}
+    losses = _calc_loss_ml_kl_l2(params, data, key, cfg, ebm) # TODO: fix, not efficient
+    loss_ml = losses["loss_ml"]
+    return loss_ml, {**{"loss": loss_ml}, **losses}
 
 
 def loss_ML_KL(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
-    loss_ml, loss_kl, aux = _cal_loss_ml_kl(params, data, key, cfg, ebm)
+    losses = _calc_loss_ml_kl_l2(params, data, key, cfg, ebm)
+    loss_ml = losses["loss_ml"]
     loss = loss_ml + cfg.TRAIN.EBM.LOSS_KL_COEFF * loss_kl
-    return loss, {**{
-        "loss": loss,
-        "loss_ml": loss_ml,
-        "loss_kl": loss_kl,
-    }, **aux}
+    return loss, {**{"loss": loss}, **losses}
 
+
+def loss_L2_KL(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
+    losses = _calc_loss_ml_kl_l2(params, data, key, cfg, ebm)
+    loss_l2 = losses["loss_l2"]
+    loss = loss_l2 + cfg.TRAIN.EBM.LOSS_KL_COEFF * loss_kl
+    return loss, {**{"loss": loss}, **losses}
