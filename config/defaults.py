@@ -34,7 +34,7 @@ _C.EBM.LAYERS = [64, 32, 32, 16]
 _C.EBM.OPTION_TYPE_DISCRETE = False # it's either discrete (1-hot) or continuous
 _C.EBM.OPTION_SIZE = 1
 _C.EBM.ALPHA = 1e-3 # internal GD step size
-_C.EBM.LANGEVIN_GD = False # if True do GD with Langevin noise
+_C.EBM.LANGEVIN_GD = True # if True do GD with Langevin noise
 _C.EBM.K = 10 # internal optimization #steps
 
 
@@ -44,21 +44,21 @@ _C.EBM.K = 10 # internal optimization #steps
 _C.TRAIN = ml_collections.ConfigDict()
 _C.TRAIN.MAX_DEVICES_PER_HOST = 8
 _C.TRAIN.EBM = ml_collections.ConfigDict()
-_C.TRAIN.EBM.LOSS_NAME = "loss_ML_KL" # from [loss_ML, loss_ML_KL, loss_L2, loss_L2_KL]
-_C.TRAIN.EBM.DATA_SIZE = 1e6
-_C.TRAIN.EBM.LEARNING_RATE = 1e-6
-_C.TRAIN.EBM.NUM_EPOCHS = 1000
+_C.TRAIN.EBM.LOSS_NAME = "loss_L2" # from [loss_ML, loss_ML_KL, loss_L2, loss_L2_KL]
+_C.TRAIN.EBM.DATA_SIZE = 1e8 # in case of limited experience
+_C.TRAIN.EBM.LEARNING_RATE = 5e-4
+_C.TRAIN.EBM.NUM_EPOCHS = 10000
 _C.TRAIN.EBM.NUM_UPDATE_EPOCHS = 8
 _C.TRAIN.EBM.NUM_SAMPLERS = 8
 _C.TRAIN.EBM.BATCH_SIZE = 2 ** 13
 _C.TRAIN.EBM.EVAL_BATCH_SIZE = 2 ** 12
 _C.TRAIN.EBM.NUM_MINIBATCHES = 8
-_C.TRAIN.EBM.NORMALIZE_OBSERVATIONS = True
-_C.TRAIN.EBM.NORMALIZE_ACTIONS = True
-_C.TRAIN.EBM.LOG_FREQUENCY = 20
+_C.TRAIN.EBM.NORMALIZE_OBSERVATIONS = False
+_C.TRAIN.EBM.NORMALIZE_ACTIONS = False # needs propper support in the code
+_C.TRAIN.EBM.LOG_FREQUENCY = 1000
 _C.TRAIN.EBM.LOG_SAVE_PARAMS = False
-_C.TRAIN.EBM.DISCOUNT = 0.9
-_C.TRAIN.EBM.LOSS_KL_COEFF = 1.0
+_C.TRAIN.EBM.DISCOUNT = 0.95
+_C.TRAIN.EBM.LOSS_KL_COEFF = 1e3
 
 # ---------------------------------------------------------------------------- #
 # batch guide:
