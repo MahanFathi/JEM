@@ -52,8 +52,8 @@ def _calc_loss_ml_kl_l2(params: Params, data: StepData, key: PRNGKey, cfg: Froze
     }
 
 
+# LOSS FNs
 def loss_L2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
-
     # infer z and a
     #   z: (batch_size, option_size)
     #   a: (batch_size, horizon - 1, action_size)
@@ -86,3 +86,19 @@ def loss_L2_KL(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDi
     loss_l2 = losses["loss_l2"]
     loss = loss_l2 + cfg.TRAIN.EBM.LOSS_KL_COEFF * loss_kl
     return loss, {**{"loss": loss}, **losses}
+
+
+# EVAL FNs
+def eval_action_l2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
+    # infer z and a
+    #   z: (batch_size, option_size)
+    #   a: (batch_size, horizon - 1, action_size)
+    key, key_infer = jax.random.split(key)
+    _, a = infer_z_and_a(params, data, key, cfg, ebm, langevin_gd=False)
+
+    action_l2 = _calc_action_distance(data.action[:, 1:, :], a, 1.0)
+    action_l2_discounted = _calc_action_distance(data.action[:, 1:, :], a, cfg.TRAIN.EBM.DISCOUNT)
+    return {
+        "eval_action_l2": action_l2,
+        "eval_action_l2_discounted": action_l2_discounted,
+    }

@@ -13,7 +13,7 @@ import jax.numpy as jnp
 import optax
 from ml_collections import FrozenConfigDict
 
-from ebm import EBM, get_loss_fn
+from ebm import EBM, get_loss_fn, eval_action_l2
 from envs.base_env import BaseEnv
 from envs.base_sampler import BaseSampler
 from util.types import *
@@ -36,6 +36,7 @@ def train_ebm(
     num_samplers = cfg.TRAIN.EBM.NUM_SAMPLERS
     learning_rate = cfg.TRAIN.EBM.LEARNING_RATE
     batch_size = cfg.TRAIN.EBM.BATCH_SIZE
+    eval_batch_size = cfg.TRAIN.EBM.EVAL_BATCH_SIZE
     num_minibatches = cfg.TRAIN.EBM.NUM_MINIBATCHES
     normalize_observations = cfg.TRAIN.EBM.NORMALIZE_OBSERVATIONS
     normalize_actions = cfg.TRAIN.EBM.NORMALIZE_ACTIONS # TODO: support normalization w/ fixed params
@@ -187,8 +188,22 @@ def train_ebm(
         t = time.time()
 
         if process_id == 0:
+
+            # do eval
+            key_eval, key_eval_infer, key_eval_sampler = jax.random.split(key_eval, 3)
+            eval_data: StepData = sampler.sample_batch_subtrajectory(
+                batch_size, key_eval_sampler)
+            eval_data = eval_data.replace(
+                observation=obs_normalizer_apply_fn(obs_normalizer_params, eval_data.observation),
+                action=act_normalizer_apply_fn(act_normalizer_params, eval_data.action),
+            )
+            eval_params = jax.tree_map(lambda x: x[0], training_state.params)
+            evals = eval_action_l2(eval_params, eval_data, key_eval_infer, cfg, ebm)
+
+            # log callback
+            metrics = {**losses, **evals}
             if progress_fn:
-                progress_fn(int(training_state.obs_normalizer_params[0][0]), losses)
+                progress_fn(int(training_state.obs_normalizer_params[0][0]), metrics)
 
         if it == log_frequency:
             break

@@ -13,6 +13,7 @@ def get_config():
     _C.SAMPLER.SAMPLER_NAME = "particle_and_target"
 
     _C.TRAIN.EBM.BATCH_SIZE = 64
+    _C.TRAIN.EBM.EVAL_BATCH_SIZE = 32
 
     _C.TRAIN.EBM.NUM_EPOCHS = 20
     _C.TRAIN.EBM.LOG_FREQUENCY = 20
