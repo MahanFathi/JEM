@@ -183,8 +183,6 @@ def train_ebm(
     metrics = {}
 
     for it in range(log_frequency + 1):
-        logging.info('starting iteration %s %s', it, time.time() - xt)
-        logging.info('losses: {}'.format(losses))
         t = time.time()
 
         if process_id == 0:
@@ -202,6 +200,8 @@ def train_ebm(
 
             # log callback
             metrics = {**losses, **evals}
+            logging.info('starting iteration %s %s', it, time.time() - xt)
+            logging.info('metrics: {}'.format(metrics))
             if progress_fn:
                 progress_fn(int(training_state.obs_normalizer_params[0][0]), metrics)
 
