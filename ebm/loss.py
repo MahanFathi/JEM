@@ -25,7 +25,7 @@ def _calc_loss_ml_kl_l2(params: Params, data: StepData, key: PRNGKey, cfg: Froze
     #   z: (batch_size, option_size)
     #   a: (batch_size, horizon - 1, action_size)
     key, key_infer = jax.random.split(key)
-    z, a = infer_z_and_a(params, data, key, cfg, ebm)
+    z, a = infer_z_then_a(params, data, key, cfg, ebm)
 
     horizon = a.shape[1] + 1
     z = jnp.stack([z] * (horizon - 1), axis=1) # (batch_size, horizon - 1, option_size)
@@ -59,7 +59,7 @@ def loss_L2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict,
     #   z: (batch_size, option_size)
     #   a: (batch_size, horizon - 1, action_size)
     key, key_infer = jax.random.split(key)
-    _, a = infer_z_and_a(params, data, key, cfg, ebm)
+    _, a = infer_z_then_a(params, data, key, cfg, ebm)
 
     loss_l2 = _calc_action_distance(data.action[:, 1:, :], a, cfg.TRAIN.EBM.DISCOUNT)
     return loss_l2, {
@@ -96,7 +96,7 @@ def eval_action_l2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConf
     #   z: (batch_size, option_size)
     #   a: (batch_size, horizon - 1, action_size)
     key, key_infer = jax.random.split(key)
-    _, a = infer_z_and_a(params, data, key, cfg, ebm, langevin_gd=False)
+    _, a = infer_z_then_a(params, data, key, cfg, ebm, langevin_gd=False)
 
     action_l2 = _calc_action_distance(data.action[:, 1:, :], a, 1.0)
     action_l2_discounted = _calc_action_distance(data.action[:, 1:, :], a, cfg.TRAIN.EBM.DISCOUNT)
