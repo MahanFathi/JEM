@@ -58,7 +58,7 @@ _C.TRAIN.EBM.NORMALIZE_ACTIONS = False # needs propper support in the code
 _C.TRAIN.EBM.LOG_FREQUENCY = 1000
 _C.TRAIN.EBM.LOG_SAVE_PARAMS = False
 _C.TRAIN.EBM.DISCOUNT = 0.95
-_C.TRAIN.EBM.LOSS_KL_COEFF = 1e3
+_C.TRAIN.EBM.LOSS_KL_COEFF = 1.0
 
 # ---------------------------------------------------------------------------- #
 # batch guide:
