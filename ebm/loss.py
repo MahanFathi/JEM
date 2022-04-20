@@ -5,7 +5,7 @@ from jax import numpy as jnp
 from ml_collections import FrozenConfigDict
 
 from ebm import EBM
-from ebm.ebm import infer_z_and_a
+from ebm.ebm import infer_z_then_a
 from util.types import *
 
 
@@ -85,6 +85,7 @@ def loss_ML_KL(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDi
 def loss_L2_KL(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
     losses = _calc_loss_ml_kl_l2(params, data, key, cfg, ebm)
     loss_l2 = losses["loss_l2"]
+    loss_kl = losses["loss_kl"]
     loss = loss_l2 + cfg.TRAIN.EBM.LOSS_KL_COEFF * loss_kl
     return loss, {**{"loss": loss}, **losses}
 
