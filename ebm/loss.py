@@ -15,6 +15,7 @@ def _soft_plus(x):
 
 
 def _calc_action_distance(a, a_pred, discount):
+    # TODO: either support normalized action, or remove it altogether
     return jnp.mean(discount ** jnp.arange(a.shape[1]) * jnp.linalg.norm(a - a_pred, axis=-1))
 
 

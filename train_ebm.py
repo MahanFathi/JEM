@@ -17,6 +17,7 @@ from ebm import EBM, get_loss_fn, eval_action_l2
 from envs.base_env import BaseEnv
 from envs.base_sampler import BaseSampler
 from util.types import *
+from util import logger
 
 
 def train_ebm(
@@ -41,6 +42,7 @@ def train_ebm(
     normalize_observations = cfg.TRAIN.EBM.NORMALIZE_OBSERVATIONS
     normalize_actions = cfg.TRAIN.EBM.NORMALIZE_ACTIONS # TODO: support normalization w/ fixed params
     log_frequency = cfg.TRAIN.EBM.LOG_FREQUENCY
+    save_params = cfg.TRAIN.EBM.LOG_SAVE_PARAMS
 
     # asserts
     xt = time.time()
@@ -202,6 +204,13 @@ def train_ebm(
             metrics = {**losses, **evals}
             logging.info('starting iteration %s %s', it, time.time() - xt)
             logging.info('metrics: {}'.format(metrics))
+
+            if save_params:
+                logger.save_params(
+                    (obs_normalizer_params, act_normalizer_params, eval_params),
+                    str(int(training_state.obs_normalizer_params[0][0])),
+                    logger.get_logdir_path(cfg))
+
             if progress_fn:
                 progress_fn(int(training_state.obs_normalizer_params[0][0]), metrics)
 
@@ -225,6 +234,12 @@ def train_ebm(
     act_normalizer_params = jax.tree_map(lambda x: x[0],
                                          training_state.act_normalizer_params)
     ebm_params = jax.tree_map(lambda x: x[0], training_state.params)
+
+    # save params in the end
+    logger.save_params(
+        (obs_normalizer_params, act_normalizer_params, ebm_params),
+        str(int(training_state.obs_normalizer_params[0][0])),
+        logger.get_logdir_path(cfg))
 
     logging.info('total steps: %s', obs_normalizer_params[0])
 

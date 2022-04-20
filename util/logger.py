@@ -4,6 +4,8 @@ from yacs.config import CfgNode
 from datetime import datetime
 from pathlib import Path
 
+from util.types import *
+
 LOG_PATH = None
 
 def get_logdir_path(cfg: CfgNode) -> Path:
@@ -23,3 +25,13 @@ def get_logdir_path(cfg: CfgNode) -> Path:
 def get_summary_writer(cfg: CfgNode) -> tensorboard.SummaryWriter:
     log_path = get_logdir_path(cfg)
     return tensorboard.SummaryWriter(str(log_path))
+
+def save_params(params: Params, name: str, logdir: str = None):
+    params_dir = logdir.joinpath("params")
+    params_dir.mkdir(exist_ok=True)
+    params_file = params_dir.joinpath("{}.flax".format(name))
+
+    param_bytes = flax.serialization.to_bytes(params)
+
+    with open(params_file, "wb") as f:
+        f.write(param_bytes)
