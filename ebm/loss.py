@@ -11,7 +11,7 @@ from util.types import *
 
 # helper functions
 def _soft_plus(x):
-    return jnp.log(1. + jnp.exp(x))
+    return jnp.log(1. + jnp.exp(x) + 1e-8)
 
 
 def _calc_action_distance(a, a_pred, discount):
