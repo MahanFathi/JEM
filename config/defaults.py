@@ -36,6 +36,7 @@ _C.EBM.OPTION_SIZE = 1
 _C.EBM.ALPHA = 1e-3 # internal GD step size
 _C.EBM.LANGEVIN_GD = True # if True do GD with Langevin noise
 _C.EBM.K = 10 # internal optimization #steps
+_C.EBM.GRAD_CLIP = 1.0 # grad clipping during inference. 0.0 -> no clipping
 
 
 # ---------------------------------------------------------------------------- #

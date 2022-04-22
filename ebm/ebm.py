@@ -28,8 +28,17 @@ class EBM(object):
         self.option_size = cfg.EBM.OPTION_SIZE
 
         # define derivatives
-        self.dedz = jax.jit(jax.vmap(jax.grad(self.apply, 2), in_axes=(None, 0, 0, 0)))
-        self.deda = jax.jit(jax.vmap(jax.grad(self.apply, 3), in_axes=(None, 0, 0, 0)))
+        self._dedz = jax.jit(jax.vmap(jax.grad(self.apply, 2), in_axes=(None, 0, 0, 0)))
+        self._deda = jax.jit(jax.vmap(jax.grad(self.apply, 3), in_axes=(None, 0, 0, 0)))
+
+        if cfg.EBM.GRAD_CLIP:
+            self.dedz = lambda params, s, z, a: jnp.clip(
+                self._dedz(params, s, z, a), -cfg.EBM.GRAD_CLIP, cfg.EBM.GRAD_CLIP)
+            self.deda = lambda params, s, z, a: jnp.clip(
+                self._deda(params, s, z, a), -cfg.EBM.GRAD_CLIP, cfg.EBM.GRAD_CLIP)
+        else:
+            self.dedz = self._dedz
+            self.deda = self._deda
 
 
     def init(self, key: PRNGKey):
