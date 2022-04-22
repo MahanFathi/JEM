@@ -74,7 +74,10 @@ def train_ebm(
     init_params = ebm.init(key_model)
 
     # OPTIMIZER
-    optimizer = optax.adam(learning_rate=learning_rate)
+    optimizer = optax.chain(
+        optax.clip(1.0),
+        optax.adam(learning_rate=learning_rate),
+    )
     optimizer_state = optimizer.init(init_params)
     optimizer_state, init_params = pmap.bcast_local_devices(
         (optimizer_state, init_params), local_devices_to_use)

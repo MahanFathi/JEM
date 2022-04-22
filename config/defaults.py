@@ -22,7 +22,7 @@ _C.ENV.TIMESTEP = 0.05
 # ---------------------------------------------------------------------------- #
 _C.SAMPLER = ml_collections.ConfigDict()
 _C.SAMPLER.SAMPLER_NAME = "particle_and_target"
-_C.SAMPLER.HORIZON = 5
+_C.SAMPLER.HORIZON = 10
 _C.SAMPLER.BATCH_SIZE = 16
 
 

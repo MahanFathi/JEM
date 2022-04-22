@@ -15,7 +15,7 @@ class FeedForwardModel:
 class MLP(linen.Module):
   """MLP module."""
   layer_sizes: Sequence[int]
-  activation: Callable[[jnp.ndarray], jnp.ndarray] = linen.relu
+  activation: Callable[[jnp.ndarray], jnp.ndarray] = linen.elu
   kernel_init: Callable[..., Any] = jax.nn.initializers.lecun_uniform()
   activate_final: bool = False
   bias: bool = True

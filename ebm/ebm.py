@@ -56,6 +56,7 @@ class EBM(object):
         key, langevin_key = jax.random.split(key)
         omega = jax.random.normal(langevin_key, z.shape) * jnp.sqrt(alpha)
         omega *= langevin_gd # TODO: dirty way around jax compiling scan functions
+        # TODO: do not add noise at final step?
 
         z += -alpha / 2. * self.dedz(params, s, z, a) + omega
 
@@ -77,6 +78,7 @@ class EBM(object):
         key, langevin_key = jax.random.split(key)
         omega = jax.random.normal(langevin_key, a.shape) * jnp.sqrt(alpha)
         omega *= langevin_gd # TODO: dirty way around jax compiling scan functions
+        # TODO: do not add noise at final step?
 
         a += -alpha / 2. * self.deda(params, s, z, a) + omega
 
@@ -100,6 +102,7 @@ class EBM(object):
         omega_a = jax.random.normal(langevin_key_a, a.shape) * jnp.sqrt(alpha)
         omega_z *= langevin_gd # TODO: dirty way around jax compiling scan functions
         omega_a *= langevin_gd # TODO: dirty way around jax compiling scan functions
+        # TODO: do not add noise at final step?
 
         dedz = self.dedz(params, s, z, a)
         deda = self.deda(params, s, z, a)
