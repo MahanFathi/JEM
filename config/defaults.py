@@ -30,7 +30,14 @@ _C.SAMPLER.BATCH_SIZE = 16
 # ENERGY-BASED MODEL
 # ---------------------------------------------------------------------------- #
 _C.EBM = ml_collections.ConfigDict()
-_C.EBM.LAYERS = [64, 32, 32, 16]
+_C.EBM.ARCH = "arch1" # {"arch0": simple_feed_forward, "arch1": multipe_mlps}
+_C.EBM.ARCH0 = ml_collections.ConfigDict()
+_C.EBM.ARCH0.LAYERS = [64, 32, 32, 16]
+_C.EBM.ARCH1 = ml_collections.ConfigDict()
+_C.EBM.ARCH1.F_LAYERS = [64, 32, 32, 16]
+_C.EBM.ARCH1.G_LAYERS = [64, 32, 32, 16]
+_C.EBM.ARCH1.M_LAYERS = [64, 32, 32, 16]
+_C.EBM.ARCH1.E_LAYERS = [64, 32, 32, 16]
 _C.EBM.OPTION_TYPE_DISCRETE = False # it's either discrete (1-hot) or continuous
 _C.EBM.OPTION_SIZE = 1
 _C.EBM.ALPHA = 1e-3 # internal GD step size

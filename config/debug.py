@@ -9,6 +9,8 @@ def get_config():
     # mocks 8 tpu devices on cpu
     _C.MOCK_TPU = False
 
+    _C.EBM.ARCH = "arch1"
+
     _C.ENV.ENV_NAME = "binary"
     _C.SAMPLER.SAMPLER_NAME = "binary"
 

@@ -5,7 +5,7 @@ from jax import numpy as jnp
 from ml_collections import FrozenConfigDict
 
 from envs.base_env import BaseEnv
-from util.net import make_model
+from util.net import build_ebm_net
 from util.types import *
 
 # from absl import logging
@@ -18,14 +18,13 @@ class EBM(object):
 
         self.cfg = cfg
         self.env = env
-        self._ebm_net = make_model(
-            list(cfg.EBM.LAYERS) + [1],
-            env.observation_size + cfg.EBM.OPTION_SIZE + env.action_size,
-        )
 
         self.state_size = env._observation_size
         self.action_size = env._action_size
         self.option_size = cfg.EBM.OPTION_SIZE
+
+        # build net
+        self._ebm_net = build_ebm_net(cfg, self.state_size, self.action_size)
 
         # define derivatives
         self._dedz = jax.jit(jax.vmap(jax.grad(self.apply, 2), in_axes=(None, 0, 0, 0)))
@@ -47,7 +46,7 @@ class EBM(object):
 
     @partial(jax.jit, static_argnums=(0,))
     def apply(self, params: Params, s: jnp.ndarray, z: jnp.ndarray, a: jnp.ndarray):
-        return self._ebm_net.apply(params, jnp.concatenate([s, z, a], axis=-1)).squeeze() ** 2 # (batch_size, 1).squeeze()
+        return self._ebm_net.apply(params, s, z, a).squeeze() ** 2 # (batch_size, 1).squeeze()
 
 
     @partial(jax.jit, static_argnums=(0, ))
