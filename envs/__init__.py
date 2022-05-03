@@ -1,14 +1,21 @@
 import jax
 from ml_collections import FrozenConfigDict
 from util.types import *
+from .envs.binary import BinaryEnv, BinarySampler
 from .envs.particle_and_target import ParticleAndTargetEnv, ParticleAndTargetSampler
+
+__all__ = []
+__all__ += ["BinaryEnv", "BinarySampler"]
+__all__ += ["ParticleAndTargetEnv", "ParticleAndTargetSampler"]
 
 _registry = {
     "env": {
         "particle_and_target": ParticleAndTargetEnv,
+        "binary": BinaryEnv,
     },
     "sampler": {
         "particle_and_target": ParticleAndTargetSampler,
+        "binary": BinarySampler,
     },
 }
 
