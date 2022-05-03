@@ -10,12 +10,12 @@ __all__ += ["ParticleAndTargetEnv", "ParticleAndTargetSampler"]
 
 _registry = {
     "env": {
-        "particle_and_target": ParticleAndTargetEnv,
         "binary": BinaryEnv,
+        "particle_and_target": ParticleAndTargetEnv,
     },
     "sampler": {
-        "particle_and_target": ParticleAndTargetSampler,
         "binary": BinarySampler,
+        "particle_and_target": ParticleAndTargetSampler,
     },
 }
 

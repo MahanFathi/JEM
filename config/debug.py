@@ -9,8 +9,8 @@ def get_config():
     # mocks 8 tpu devices on cpu
     _C.MOCK_TPU = False
 
-    _C.ENV.ENV_NAME = "particle_and_target"
-    _C.SAMPLER.SAMPLER_NAME = "particle_and_target"
+    _C.ENV.ENV_NAME = "binary"
+    _C.SAMPLER.SAMPLER_NAME = "binary"
 
     _C.TRAIN.EBM.BATCH_SIZE = 64
     _C.TRAIN.EBM.EVAL_BATCH_SIZE = 32
