@@ -104,7 +104,7 @@ class EBM(object):
         langevin_gd: bool
         params, s, z, a, key, langevin_gd = carry
 
-        alpha = self.cfg.EBM.ALPHA # NOTE: here we assume we have used same alph for z and a during training
+        alpha = self.cfg.EBM.ALPHA # NOTE: here we assume we have used same alpha for z and a during training
 
         key, langevin_key_z, langevin_key_a = jax.random.split(key, 3)
         omega_z = jax.random.normal(langevin_key_z, z.shape) * jnp.sqrt(alpha)
