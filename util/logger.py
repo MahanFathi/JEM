@@ -41,6 +41,7 @@ def get_summary_writer(cfg: CfgNode) -> tensorboard.SummaryWriter:
 def init_wandb(cfg: CfgNode):
     wandb.init(
         project="JEM",
+        dir=get_logdir_path(cfg),
         name=get_log_name(cfg),
         config=cfg.to_dict(),
     )
