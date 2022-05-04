@@ -5,6 +5,7 @@ from absl import app
 from absl import flags
 from absl import logging
 
+import wandb
 import jax
 from jax.config import config
 import ml_collections
@@ -38,13 +39,12 @@ def main(argv):
 
     env, sampler = build_env_sampler(cfg, key_env)
 
-    # tb logging callback
-    tb_summary_writer = logger.get_summary_writer(cfg)
     def progress_fn(num_steps: int, metrics: Mapping[str, Union[int, float]]):
-        for key, value in metrics.items():
-            tb_summary_writer.scalar(key, value, num_steps)
+        logger.log_metrics(cfg, num_steps, metrics)
 
     train_ebm(cfg, env, sampler, key_train, progress_fn)
+    wandb.finish()
+
 
 if __name__ == '__main__':
     app.run(main)

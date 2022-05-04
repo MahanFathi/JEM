@@ -4,7 +4,9 @@ import ml_collections
 # Define Config Node
 # ---------------------------------------------------------------------------- #
 _C = ml_collections.ConfigDict()
+_C.EXP_NAME = ""
 _C.seed = 0
+_C.WANDB = False
 _C.DEBUG = False
 _C.MOCK_TPU = False
 

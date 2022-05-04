@@ -1,3 +1,5 @@
+from typing import Union, Mapping
+import wandb
 from flax.metrics import tensorboard
 from yacs.config import CfgNode
 
@@ -6,17 +8,27 @@ from pathlib import Path
 
 from util.types import *
 
+LOG_NAME = None
 LOG_PATH = None
+TB_SUMMARY_WRITER = None
+
+def get_log_name(cfg: CfgNode) -> str:
+    global LOG_NAME
+    if LOG_NAME:
+        return LOG_NAME
+    log_name = "{}_{}_{}".format(
+        cfg.EXP_NAME,
+        cfg.ENV.ENV_NAME,
+        datetime.now().strftime("%Y.%m.%d_%H:%M:%S"),
+    )
+    return log_name
 
 def get_logdir_path(cfg: CfgNode) -> Path:
     global LOG_PATH
     if LOG_PATH:
         return LOG_PATH
-    logdir_name = "{}_{}".format(
-        cfg.ENV.ENV_NAME,
-        datetime.now().strftime("%Y.%m.%d_%H:%M:%S"),
-    )
-    log_path = Path("./logs").joinpath(logdir_name)
+    log_name = get_log_name(cfg)
+    log_path = Path("./logs").joinpath(log_name)
     print(log_path)
     log_path.mkdir(parents=True, exist_ok=True)
     LOG_PATH = log_path
@@ -25,6 +37,25 @@ def get_logdir_path(cfg: CfgNode) -> Path:
 def get_summary_writer(cfg: CfgNode) -> tensorboard.SummaryWriter:
     log_path = get_logdir_path(cfg)
     return tensorboard.SummaryWriter(str(log_path))
+
+def init_wandb(cfg: CfgNode):
+    wandb.init(
+        project="JEM",
+        name=get_log_name(cfg),
+        config=cfg.to_dict(),
+    )
+
+def log_metrics(cfg: CfgNode, num_steps: int, metrics: Mapping[str, Union[int, float]]):
+    global TB_SUMMARY_WRITER
+    if not TB_SUMMARY_WRITER:
+        TB_SUMMARY_WRITER = get_summary_writer(cfg)
+        if cfg.WANDB:
+            init_wandb(cfg)
+    for key, value in metrics.items():
+        TB_SUMMARY_WRITER.scalar(key, value, num_steps)
+        metrics[key] = float(value)
+    if cfg.WANDB:
+        wandb.log(metrics, num_steps)
 
 def save_params(params: Params, name: str, logdir: str = None):
     params_dir = logdir.joinpath("params")
