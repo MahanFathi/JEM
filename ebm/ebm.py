@@ -197,7 +197,12 @@ def infer_z_then_a(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConf
 
     # infer actions based on the inferred option
     key, key_init_a, key_infer_a = jax.random.split(key, 3)
-    a_init = jax.random.normal(key_init_a, (horizon - 1, batch_size, action_size))
+    if cfg.TRAIN.EBM.WARMSTART_INFERENCE:
+        a0 = data.action[:, 0, :]
+        a_init = jnp.stack((horizon - 1) * [a0])
+        # TODO: warmstart next inference based on last inferred action
+    else:
+        a_init = jax.random.normal(key_init_a, (horizon - 1, batch_size, action_size))
     _, a = jax.lax.scan(
         ebm.scan_to_infer_multiple_a, (params, z, key, langevin_gd),
         StepData(
