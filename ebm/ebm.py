@@ -27,17 +27,27 @@ class EBM(object):
         self._ebm_net = build_ebm_net(cfg, self.state_size, self.action_size)
 
         # define derivatives
-        self._dedz = jax.jit(jax.vmap(jax.grad(self.apply, 2), in_axes=(None, 0, 0, 0)))
-        self._deda = jax.jit(jax.vmap(jax.grad(self.apply, 3), in_axes=(None, 0, 0, 0)))
+        self._dedz = jax.jit(jax.vmap(jax.grad(self.apply, 2),
+                                      in_axes=(None, 0, 0, 0)))
+        self._deda = jax.jit(jax.vmap(jax.grad(self.apply, 3),
+                                      in_axes=(None, 0, 0, 0)))
 
         if cfg.EBM.GRAD_CLIP:
             self.dedz = lambda params, s, z, a: jnp.clip(
-                self._dedz(params, s, z, a), -cfg.EBM.GRAD_CLIP, cfg.EBM.GRAD_CLIP)
+                self._dedz(params, s, z, a),
+                -cfg.EBM.GRAD_CLIP, cfg.EBM.GRAD_CLIP)
             self.deda = lambda params, s, z, a: jnp.clip(
-                self._deda(params, s, z, a), -cfg.EBM.GRAD_CLIP, cfg.EBM.GRAD_CLIP)
+                self._deda(params, s, z, a),
+                -cfg.EBM.GRAD_CLIP, cfg.EBM.GRAD_CLIP)
         else:
             self.dedz = self._dedz
             self.deda = self._deda
+
+        # batch inferece for actions
+        self.infer_batch_a = jax.vmap(self.infer_a,
+                                      in_axes=(None, None, None, 0, 0, None))
+        self.apply_batch_a = jax.vmap(self.apply,
+                                      in_axes=(None, None, None, 0))
 
 
     def init(self, key: PRNGKey):
@@ -168,17 +178,37 @@ class EBM(object):
         return (params, z, key, langevin_gd), a
 
 
+    def scan_to_infer_multiple_batch_a(self, carry, x: StepData):
+        params, z, key, langevin_gd = carry
+        s = x.observation
+        a_init = x.action
 
+        a_inference_batch_size = a_init.shape[0]
+
+        key, key_infer_a = jax.random.split(key)
+        key_infer_a = jax.random.split(key_infer_a, a_inference_batch_size)
+
+        a = self.infer_batch_a(params, s, z, a_init, key_infer_a, langevin_gd)
+
+        return (params, z, key, langevin_gd), a
+
+
+# ---------------------------------------------------------------------------- #
+# Util Functions
+# ---------------------------------------------------------------------------- #
 def infer_z_then_a(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM, langevin_gd: bool = None):
     """
     Infers the option from the first transition in the data and
     then predicts future actions based on the inferred option.
 
+    This function makes various (#cfg.TRAIN.EBM.ACTION_INFER_BATCH_SIZE)
+    future action predictions, which is required by loss KL.
+
     data: (batch_size, horizon, dim)
 
     returns:
         z: (batch_size, option_size)
-        a: (batch_size, horizon - 1, action_size)
+        a: (action_infer_batch_size, batch_size, horizon - 1, action_size)
     """
 
     if langevin_gd is None:
@@ -196,15 +226,18 @@ def infer_z_then_a(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConf
     )
 
     # infer actions based on the inferred option
+    action_infer_batch_size = cfg.TRAIN.EBM.ACTION_INFER_BATCH_SIZE
     key, key_init_a, key_infer_a = jax.random.split(key, 3)
     if cfg.TRAIN.EBM.WARMSTART_INFERENCE:
         a0 = data.action[:, 0, :]
-        a_init = jnp.stack((horizon - 1) * [a0])
+        a_init = jnp.stack((horizon - 1) * [jnp.stack(action_infer_batch_size * [a0])])
         # TODO: warmstart next inference based on last inferred action
     else:
-        a_init = jax.random.normal(key_init_a, (horizon - 1, batch_size, action_size))
+        a_init = jax.random.normal(
+            key_init_a,
+            (horizon - 1, action_infer_batch_size, batch_size, action_size))
     _, a = jax.lax.scan(
-        ebm.scan_to_infer_multiple_a, (params, z, key, langevin_gd),
+        ebm.scan_to_infer_multiple_batch_a, (params, z, key, langevin_gd),
         StepData(
             observation=data.observation.swapaxes(0, 1)[1:],
             action=a_init,

@@ -33,18 +33,18 @@ def _calc_loss_ml_kl_l2(params: Params, data: StepData, key: PRNGKey, cfg: Froze
     # calc loss ml
     discount = cfg.TRAIN.EBM.DISCOUNT
     loss_ml = discount ** jnp.arange(horizon - 1) * _soft_plus(
-        ebm.apply(params, data.observation[:, 1:, :], z, data.action[:, 1:, :]) -
-        ebm.apply(params, data.observation[:, 1:, :], z, jax.lax.stop_gradient(a))
+        ebm.apply(params, data.observation[:, 1:, :], z, data.action[:, 1:, :]) #-
+        # ebm.apply(params, data.observation[:, 1:, :], z, jax.lax.stop_gradient(a))
     ).mean(axis=0)
     loss_ml = loss_ml.mean()
 
     # calc loss kl
-    loss_kl = discount ** jnp.arange(horizon - 1) * ebm.apply(
+    loss_kl = discount ** jnp.arange(horizon - 1) * ebm.apply_batch_a(
         jax.lax.stop_gradient(params), data.observation[:, 1:, :],
-        jax.lax.stop_gradient(z), a).mean(axis=0)
+        jax.lax.stop_gradient(z), a).mean(axis=(0, 1))
     loss_kl = loss_kl.mean()
 
-    loss_l2 = _calc_action_distance(data.action[:, 1:, :], a, discount)
+    loss_l2 = _calc_action_distance(data.action[:, 1:, :], a[0], discount) # TODO: fix this crap
 
     return {
         "loss_ml": loss_ml,
