@@ -29,7 +29,7 @@ def _calc_loss_ml_kl_l2(params: Params, data: StepData, key: PRNGKey, cfg: Froze
     key, key_infer = jax.random.split(key)
     z, a = infer_z_then_a(params, data, key, cfg, ebm)
 
-    horizon = a.shape[1] + 1
+    horizon = a.shape[-2] + 1
     z = jnp.stack([z] * (horizon - 1), axis=1) # (batch_size, horizon - 1, option_size)
 
     # calc loss ml
