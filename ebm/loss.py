@@ -16,9 +16,9 @@ def _soft_plus(x):
 
 
 @partial(jax.vmap, in_axes=(0, None, None))
-def _calc_action_distance(a_pred, a, discount):
+def _calc_action_distance(action_pred, action, discount):
     # TODO: either support normalized action, or remove it altogether
-    return jnp.mean(discount ** jnp.arange(a.shape[1]) * jnp.linalg.norm(a - a_pred, axis=-1))
+    return jnp.mean(discount ** jnp.arange(action.shape[1]) * jnp.linalg.norm(action - action_pred, axis=-1))
 
 
 def _calc_loss_ml_kl_l2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
@@ -101,7 +101,7 @@ def eval_action_l2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConf
     _, a = infer_z_then_a(params, data, key, cfg, ebm, langevin_gd=False)
 
     action_l2 = _calc_action_distance(a, data.action[:, 1:, :], 1.0).mean()
-    action_l2_discounted = _calc_action_distance(data.action[:, 1:, :], a, cfg.TRAIN.EBM.DISCOUNT)
+    action_l2_discounted = _calc_action_distance(a, data.action[:, 1:, :], cfg.TRAIN.EBM.DISCOUNT).mean()
     return {
         "eval_action_l2": action_l2,
         "eval_action_l2_discounted": action_l2_discounted,
