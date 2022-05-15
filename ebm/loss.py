@@ -1,4 +1,5 @@
 from typing import Tuple
+from functools import partial
 
 import jax
 from jax import numpy as jnp
@@ -14,7 +15,8 @@ def _soft_plus(x):
     return jnp.log(1. + jnp.exp(x))
 
 
-def _calc_action_distance(a, a_pred, discount):
+@partial(jax.vmap, in_axes=(0, None, None))
+def _calc_action_distance(a_pred, a, discount):
     # TODO: either support normalized action, or remove it altogether
     return jnp.mean(discount ** jnp.arange(a.shape[1]) * jnp.linalg.norm(a - a_pred, axis=-1))
 
@@ -44,7 +46,7 @@ def _calc_loss_ml_kl_l2(params: Params, data: StepData, key: PRNGKey, cfg: Froze
         jax.lax.stop_gradient(z), a).mean(axis=(0, 1))
     loss_kl = loss_kl.mean()
 
-    loss_l2 = _calc_action_distance(data.action[:, 1:, :], a[0], discount) # TODO: fix this crap
+    loss_l2 = _calc_action_distance(a, data.action[:, 1:, :], discount).mean()
 
     return {
         "loss_ml": loss_ml,
@@ -61,7 +63,7 @@ def loss_L2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict,
     key, key_infer = jax.random.split(key)
     _, a = infer_z_then_a(params, data, key, cfg, ebm)
 
-    loss_l2 = _calc_action_distance(data.action[:, 1:, :], a, cfg.TRAIN.EBM.DISCOUNT)
+    loss_l2 = _calc_action_distance(a, data.action[:, 1:, :], cfg.TRAIN.EBM.DISCOUNT).mean()
     return loss_l2, {
         "loss": loss_l2,
         "loss_l2": loss_l2,
@@ -98,7 +100,7 @@ def eval_action_l2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConf
     key, key_infer = jax.random.split(key)
     _, a = infer_z_then_a(params, data, key, cfg, ebm, langevin_gd=False)
 
-    action_l2 = _calc_action_distance(data.action[:, 1:, :], a, 1.0)
+    action_l2 = _calc_action_distance(a, data.action[:, 1:, :], 1.0).mean()
     action_l2_discounted = _calc_action_distance(data.action[:, 1:, :], a, cfg.TRAIN.EBM.DISCOUNT)
     return {
         "eval_action_l2": action_l2,
