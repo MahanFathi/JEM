@@ -244,7 +244,7 @@ def infer_z_then_a(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConf
         ),
     )
 
-    a = a.swapaxes(0, 1)
+    a = a.swapaxes(0, 2)
 
     # if cfg.DEBUG:
         # debug_log_fn = lambda x: logging.log(logging.DEBUG, "\n***Inferred Actions***: \n{}".format(x))
