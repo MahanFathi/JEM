@@ -10,10 +10,6 @@ from ebm.ebm import infer_z_then_a
 from util.types import *
 
 
-# helper functions
-def _soft_plus(x):
-    return jnp.log(1. + jnp.exp(x))
-
 
 @partial(jax.vmap, in_axes=(0, None, None))
 def _calc_action_distance(action_pred, action, discount):
@@ -34,9 +30,9 @@ def _calc_loss_ml_kl_l2(params: Params, data: StepData, key: PRNGKey, cfg: Froze
 
     # calc loss ml
     discount = cfg.TRAIN.EBM.DISCOUNT
-    loss_ml = discount ** jnp.arange(horizon - 1) * _soft_plus(
-        ebm.apply(params, data.observation[:, 1:, :], z, data.action[:, 1:, :]) #-
-        # ebm.apply(params, data.observation[:, 1:, :], z, jax.lax.stop_gradient(a))
+    loss_ml = discount ** jnp.arange(horizon - 1) * jax.nn.softplus(
+        ebm.apply(params, data.observation[:, 1:, :], z, data.action[:, 1:, :]) -
+        ebm.apply_batch_a(params, data.observation[:, 1:, :], z, jax.lax.stop_gradient(a)).mean(axis=0)
     ).mean(axis=0)
     loss_ml = loss_ml.mean()
 
