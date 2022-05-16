@@ -24,7 +24,7 @@ _C.ENV.TIMESTEP = 0.05
 # ---------------------------------------------------------------------------- #
 _C.SAMPLER = ml_collections.ConfigDict()
 _C.SAMPLER.SAMPLER_NAME = "particle_and_target"
-_C.SAMPLER.HORIZON = 10
+_C.SAMPLER.HORIZON = 2
 _C.SAMPLER.BATCH_SIZE = 16
 
 
@@ -34,7 +34,7 @@ _C.SAMPLER.BATCH_SIZE = 16
 _C.EBM = ml_collections.ConfigDict()
 _C.EBM.ARCH = "arch0" # {"arch0": simple_feed_forward, "arch1": multipe_mlps}
 _C.EBM.ARCH0 = ml_collections.ConfigDict()
-_C.EBM.ARCH0.LAYERS = [64, 32, 32, 16]
+_C.EBM.ARCH0.LAYERS = [64, 64, 64, 16]
 _C.EBM.ARCH1 = ml_collections.ConfigDict()
 _C.EBM.ARCH1.F_LAYERS = [64, 32, 32, 16]
 _C.EBM.ARCH1.G_LAYERS = [64, 32, 32, 16]
@@ -42,10 +42,10 @@ _C.EBM.ARCH1.G_LAYERS = [64, 32, 32, 16]
 # _C.EBM.ARCH2.E_LAYERS = [64, 32, 32, 16]
 _C.EBM.OPTION_TYPE_DISCRETE = False # it's either discrete (1-hot) or continuous
 _C.EBM.OPTION_SIZE = 1
-_C.EBM.ALPHA = 1e-3 # internal GD step size
+_C.EBM.ALPHA = 5e-3 # internal GD step size
 _C.EBM.LANGEVIN_GD = True # if True do GD with Langevin noise
 _C.EBM.K = 10 # internal optimization #steps
-_C.EBM.GRAD_CLIP = 1.0 # grad clipping during inference. 0.0 -> no clipping
+_C.EBM.GRAD_CLIP = 10.0 # grad clipping during inference. 0.0 -> no clipping
 
 
 # ---------------------------------------------------------------------------- #
@@ -53,9 +53,9 @@ _C.EBM.GRAD_CLIP = 1.0 # grad clipping during inference. 0.0 -> no clipping
 # ---------------------------------------------------------------------------- #
 _C.EBM.DF_OPT = ml_collections.ConfigDict()
 _C.EBM.DF_OPT.NUM_ITERATIONS = 128
-_C.EBM.DF_OPT.NUM_SAMPLES_PER_DIM = 16
-_C.EBM.DF_OPT.STD = 0.2
-_C.EBM.DF_OPT.SHRINK_COEFF = 0.8
+_C.EBM.DF_OPT.NUM_SAMPLES_PER_DIM = 32
+_C.EBM.DF_OPT.STD = 0.4
+_C.EBM.DF_OPT.SHRINK_COEFF = 0.95
 
 
 # ---------------------------------------------------------------------------- #
@@ -68,12 +68,12 @@ _C.TRAIN.EBM.WARMSTART_INFERENCE = False
 _C.TRAIN.EBM.ACTION_INFER_BATCH_SIZE = 64
 _C.TRAIN.EBM.LOSS_NAME = "loss_ML_KL" # from [loss_ML, loss_ML_KL, loss_L2, loss_L2_KL]
 _C.TRAIN.EBM.DATA_SIZE = 1e8 # in case of limited experience
-_C.TRAIN.EBM.LEARNING_RATE = 1e-3
+_C.TRAIN.EBM.LEARNING_RATE = 1e-5
 _C.TRAIN.EBM.NUM_EPOCHS = 10000
 _C.TRAIN.EBM.NUM_UPDATE_EPOCHS = 8
 _C.TRAIN.EBM.NUM_SAMPLERS = 8
-_C.TRAIN.EBM.BATCH_SIZE = 2 ** 13
-_C.TRAIN.EBM.EVAL_BATCH_SIZE = 2 ** 12
+_C.TRAIN.EBM.BATCH_SIZE = 2 ** 11
+_C.TRAIN.EBM.EVAL_BATCH_SIZE = 2 ** 11
 _C.TRAIN.EBM.NUM_MINIBATCHES = 8
 _C.TRAIN.EBM.NORMALIZE_OBSERVATIONS = False
 _C.TRAIN.EBM.NORMALIZE_ACTIONS = False # needs propper support in the code
