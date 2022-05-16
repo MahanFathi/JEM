@@ -104,7 +104,7 @@ def eval_action_l2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConf
     z = infer_z(params, data, key, cfg, ebm, langevin_gd=False)
     stacked_z = jnp.stack((horizon - 1) * [z]).swapaxes(0, 1) # (batch_size, horizon - 1, option_size)
 
-    a = ebm.infer_batch_a_derivative_free(params, s, z, key) # (batch_size, horizon - 1, action_size)
+    a = ebm.infer_batch_a_derivative_free(params, data.observation[:, 1:, :], stacked_z, jax.random.split(key, batch_size)) # (batch_size, horizon - 1, action_size)
 
     action_l2 = _calc_action_distance(a, data.action[:, 1:, :], 1.0).mean()
     action_l2_discounted = _calc_action_distance(a, data.action[:, 1:, :], cfg.TRAIN.EBM.DISCOUNT).mean()
