@@ -6,12 +6,16 @@ from jax import numpy as jnp
 from ml_collections import FrozenConfigDict
 
 from ebm import EBM
-from ebm.ebm import infer_z_then_a
+from ebm.ebm import infer_z_then_a, infer_z
 from util.types import *
 
 
 
 @partial(jax.vmap, in_axes=(0, None, None))
+def _calc_action_distance_batched_a(action_pred, action, discount):
+    # TODO: either support normalized action, or remove it altogether
+    return jnp.mean(discount ** jnp.arange(action.shape[1]) * jnp.linalg.norm(action - action_pred, axis=-1))
+
 def _calc_action_distance(action_pred, action, discount):
     # TODO: either support normalized action, or remove it altogether
     return jnp.mean(discount ** jnp.arange(action.shape[1]) * jnp.linalg.norm(action - action_pred, axis=-1))
@@ -42,7 +46,7 @@ def _calc_loss_ml_kl_l2(params: Params, data: StepData, key: PRNGKey, cfg: Froze
         jax.lax.stop_gradient(z), a).mean(axis=(0, 1))
     loss_kl = loss_kl.mean()
 
-    loss_l2 = _calc_action_distance(a, data.action[:, 1:, :], discount).mean()
+    loss_l2 = _calc_action_distance_batched_a(a, data.action[:, 1:, :], discount).mean()
 
     return {
         "loss_ml": loss_ml,
@@ -59,7 +63,7 @@ def loss_L2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict,
     key, key_infer = jax.random.split(key)
     _, a = infer_z_then_a(params, data, key, cfg, ebm)
 
-    loss_l2 = _calc_action_distance(a, data.action[:, 1:, :], cfg.TRAIN.EBM.DISCOUNT).mean()
+    loss_l2 = _calc_action_distance_batched_a(a, data.action[:, 1:, :], cfg.TRAIN.EBM.DISCOUNT).mean()
     return loss_l2, {
         "loss": loss_l2,
         "loss_l2": loss_l2,
@@ -94,7 +98,13 @@ def eval_action_l2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConf
     #   z: (batch_size, option_size)
     #   a: (batch_size, horizon - 1, action_size)
     key, key_infer = jax.random.split(key)
-    _, a = infer_z_then_a(params, data, key, cfg, ebm, langevin_gd=False)
+
+    batch_size, horizon, _ = data.observation.shape
+
+    z = infer_z(params, data, key, cfg, ebm, langevin_gd=False)
+    stacked_z = jnp.stack((horizon - 1) * [z]).swapaxes(0, 1) # (batch_size, horizon - 1, option_size)
+
+    a = ebm.infer_batch_a_derivative_free(params, s, z, key) # (batch_size, horizon - 1, action_size)
 
     action_l2 = _calc_action_distance(a, data.action[:, 1:, :], 1.0).mean()
     action_l2_discounted = _calc_action_distance(a, data.action[:, 1:, :], cfg.TRAIN.EBM.DISCOUNT).mean()

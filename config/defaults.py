@@ -49,6 +49,16 @@ _C.EBM.GRAD_CLIP = 1.0 # grad clipping during inference. 0.0 -> no clipping
 
 
 # ---------------------------------------------------------------------------- #
+# DERIVATIVE-FREE OPTIMIZATION SETTINGS
+# ---------------------------------------------------------------------------- #
+_C.EBM.DF_OPT = ml_collections.ConfigDict()
+_C.EBM.DF_OPT.NUM_ITERATIONS = 128
+_C.EBM.DF_OPT.NUM_SAMPLES_PER_DIM = 16
+_C.EBM.DF_OPT.STD = 0.2
+_C.EBM.DF_OPT.SHRINK_COEFF = 0.8
+
+
+# ---------------------------------------------------------------------------- #
 # EBM TRAIN
 # ---------------------------------------------------------------------------- #
 _C.TRAIN = ml_collections.ConfigDict()
