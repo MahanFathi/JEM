@@ -37,12 +37,16 @@ def _calc_loss_contrastive(params: Params, data: StepData, key: PRNGKey, cfg: Fr
     # NOTE: we allow gradient to flow inside z(\theta)
     loss_contrastive_positive = ebm.apply(params, data.observation[:, 1:, :], z, data.action[:, 1:, :])
     loss_contrastive_negative = ebm.apply_batch_a(params, data.observation[:, 1:, :], z, negative_a).mean(axis=0)
+    loss_contrastive_positive = loss_contrastive_positive.mean()
+    loss_contrastive_negative = loss_contrastive_negative.mean()
 
     loss_contrastive = loss_contrastive_positive - loss_contrastive_negative
-    loss_contrastive = jax.nn.softplus(loss_contrastive.mean())
+    loss_contrastive = jax.nn.softplus(loss_contrastive)
 
     return {
         "loss_contrastive": loss_contrastive,
+        "loss_contrastive_positive": loss_contrastive_positive,
+        "loss_contrastive_negative": loss_contrastive_negative,
     }
 
 
