@@ -39,6 +39,7 @@ def _calc_loss_contrastive(params: Params, data: StepData, key: PRNGKey, cfg: Fr
     loss_contrastive_negative = ebm.apply_batch_a(params, data.observation[:, 1:, :], z, negative_a).mean(axis=0)
 
     loss_contrastive = loss_contrastive_positive - loss_contrastive_negative # TODO: optionally add softmax
+    loss_contrastive = loss_contrastive.mean()
 
     return {
         "loss_contrastive": loss_contrastive,
