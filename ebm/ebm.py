@@ -306,11 +306,11 @@ def infer_batch_z(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfi
 
     # infer z from first state-action
     key, key_init_z, key_infer_z = jax.random.split(key, 3)
-    key_infer_z = jax.random.split(key_infer_z, option_infer_batch_size)
     z_init = jax.random.normal(key_init_z, (option_infer_batch_size, batch_size, option_size))
+    key_infer_z = jax.random.split(key_infer_z, option_infer_batch_size)
     z = ebm.infer_batch_z(
-        params, data.observation[:, 0, :],
-        z_init, data.action[:, 0, :], key_infer_z,
+        params, data.observation[:, 0, :], z_init,
+        data.action[:, 0, :], key_infer_z, langevin_gd,
     )
     return z
 
