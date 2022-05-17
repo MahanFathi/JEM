@@ -86,7 +86,7 @@ def _calc_loss_ml_kl_l2(params: Params, data: StepData, key: PRNGKey, cfg: Froze
 def _calc_loss_klz(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
     key, key_infer_z = jax.random.split(key)
     batch_z = infer_batch_z(params, data, key_infer_z, cfg, ebm)
-    loss_klz = ebm.apply_batch_z(params, data.observation[:, 0, :], batch_z, data.action[:, 0, :])
+    loss_klz = ebm.apply_batch_z(jax.lax.stop_gradient(params), data.observation[:, 0, :], batch_z, data.action[:, 0, :])
     loss_klz = loss_klz.mean()
     return {
         "loss_klz": loss_klz,
