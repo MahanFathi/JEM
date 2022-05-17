@@ -46,9 +46,15 @@ class EBM(object):
         # get the energies for fixed (s, z) and a batch of actions
         self.apply_batch_a = jax.vmap(self.apply,
                                       in_axes=(None, None, None, 0))
+        # get the energies for fixed (s, a) and a batch of options
+        self.apply_batch_z = jax.vmap(self.apply,
+                                      in_axes=(None, None, 0, None))
         # langevin batch inferece for actions
         self.infer_batch_a = jax.vmap(self.infer_a,
                                       in_axes=(None, None, None, 0, 0, None))
+        # langevin batch inferece for options
+        self.infer_batch_z = jax.vmap(self.infer_z,
+                                      in_axes=(None, None, 0, None, 0, None))
         # outputs inferred actions for a batch of (s, z)
         self.infer_batch_a_derivative_free = jax.vmap(self.infer_a_derivative_free,
                                       in_axes=(None, 0, 0, 0))
@@ -282,6 +288,33 @@ def infer_z(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict,
     return z
 
 
+def infer_batch_z(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM, langevin_gd: bool = None):
+    """
+    Infers a batch of options from different initializations from the first transition in data.
+
+    data: (batch_size, horizon, dim)
+
+    returns:
+        z: (option_infer_batch_size, batch_size, option_size)
+    """
+    if langevin_gd is None:
+        langevin_gd = cfg.EBM.LANGEVIN_GD
+
+    batch_size, horizon, _ = data.action.shape
+    option_size = cfg.EBM.OPTION_SIZE
+    option_infer_batch_size = cfg.TRAIN.EBM.OPTION_INFER_BATCH_SIZE
+
+    # infer z from first state-action
+    key, key_init_z, key_infer_z = jax.random.split(key, 3)
+    key_infer_z = jax.random.split(key_infer_z, option_infer_batch_size)
+    z_init = jax.random.normal(key_init_z, (option_infer_batch_size, batch_size, option_size))
+    z = ebm.infer_batch_z(
+        params, data.observation[:, 0, :],
+        z_init, data.action[:, 0, :], key_infer_z,
+    )
+    return z
+
+
 def infer_z_then_a(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM, langevin_gd: bool = None):
     """
     Infers the option from the first transition in the data and
@@ -318,7 +351,7 @@ def infer_z_then_a(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConf
             key_init_a,
             (horizon - 1, action_infer_batch_size, batch_size, action_size))
     _, a = jax.lax.scan(
-        ebm.scan_to_infer_multiple_batch_a, (params, z, key, langevin_gd),
+        ebm.scan_to_infer_multiple_batch_a, (params, z, key_infer_a, langevin_gd),
         StepData(
             observation=data.observation.swapaxes(0, 1)[1:],
             action=a_init,

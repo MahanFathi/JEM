@@ -6,7 +6,7 @@ from jax import numpy as jnp
 from ml_collections import FrozenConfigDict
 
 from ebm import EBM
-from ebm.ebm import infer_z_then_a, infer_z
+from ebm.ebm import infer_z_then_a, infer_z, infer_batch_z
 from util.types import *
 
 
@@ -83,6 +83,16 @@ def _calc_loss_ml_kl_l2(params: Params, data: StepData, key: PRNGKey, cfg: Froze
     }
 
 
+def _calc_loss_klz(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
+    key, key_infer_z = jax.random.split(key)
+    batch_z = infer_batch_z(params, data, key_infer_z, cfg, ebm)
+    loss_klz = ebm.apply_batch_z(params, data.observation[:, 0, :], batch_z, data.action[:, 0, :])
+    loss_klz = loss_klz.mean()
+    return {
+        "loss_klz": loss_klz,
+    }
+
+
 # LOSS FNs
 def loss_L2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
     # infer z and a
@@ -115,6 +125,21 @@ def loss_ML_KL(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDi
     loss_ml = losses["loss_ml"]
     loss_kl = losses["loss_kl"]
     loss = loss_ml + cfg.TRAIN.EBM.LOSS_KL_COEFF * loss_kl
+    return loss, {**{"loss": loss}, **losses}
+
+
+def loss_ML_KL_KLz(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
+    key1, key2 = jax.random.split(key)
+    losses = {
+        **_calc_loss_ml_kl_l2(params, data, key1, cfg, ebm),
+        **_calc_loss_klz(params, data, key2, cfg, ebm),
+    }
+    loss_ml = losses["loss_ml"]
+    loss_kl = losses["loss_kl"]
+    loss_klz = losses["loss_klz"]
+    loss = loss_ml + \
+        cfg.TRAIN.EBM.LOSS_KL_COEFF * loss_kl + \
+        cfg.TRAIN.EBM.LOSS_KLZ_COEFF * loss_klz
     return loss, {**{"loss": loss}, **losses}
 
 

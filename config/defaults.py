@@ -67,7 +67,8 @@ _C.TRAIN.EBM = ml_collections.ConfigDict()
 _C.TRAIN.EBM.WARMSTART_INFERENCE = False
 _C.TRAIN.EBM.NEGATIVE_ACTION_SAMPLE_SIZE = 64
 _C.TRAIN.EBM.ACTION_INFER_BATCH_SIZE = 64
-_C.TRAIN.EBM.LOSS_NAME = "loss_ML_KL" # from [loss_ML, loss_ML_KL, loss_L2, loss_L2_KL, loss_contrastive]
+_C.TRAIN.EBM.OPTION_INFER_BATCH_SIZE = 64
+_C.TRAIN.EBM.LOSS_NAME = "loss_ML_KL_KLz" # from [loss_ML, loss_ML_KL, loss_L2, loss_L2_KL, loss_contrastive, loss_ML_KL_KLz]
 _C.TRAIN.EBM.DATA_SIZE = 1e8 # in case of limited experience
 _C.TRAIN.EBM.LEARNING_RATE = 1e-5
 _C.TRAIN.EBM.NUM_EPOCHS = 10000
@@ -82,6 +83,7 @@ _C.TRAIN.EBM.LOG_FREQUENCY = 1000
 _C.TRAIN.EBM.LOG_SAVE_PARAMS = False
 _C.TRAIN.EBM.DISCOUNT = 0.95
 _C.TRAIN.EBM.LOSS_KL_COEFF = 1.0
+_C.TRAIN.EBM.LOSS_KLZ_COEFF = 1.0
 
 # ---------------------------------------------------------------------------- #
 # batch guide:
