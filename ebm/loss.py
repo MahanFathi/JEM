@@ -25,7 +25,7 @@ def _calc_loss_ml_kl_l2(params: Params, data: StepData, key: PRNGKey, cfg: Froze
 
     # infer z and a
     #   z: (batch_size, option_size)
-    #   a: (batch_size, horizon - 1, action_size)
+    #   a: (action_infer_batch_size, batch_size, horizon - 1, action_size)
     key, key_infer = jax.random.split(key)
     z, a = infer_z_then_a(params, data, key, cfg, ebm)
 
