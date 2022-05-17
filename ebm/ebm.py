@@ -240,7 +240,7 @@ class EBM(object):
         batch_size = s.shape[0]
         sample_batch_size = self.cfg.EBM.DF_OPT.NUM_SAMPLES_PER_DIM ** action_size
 
-        # assuming all actions lie in [0, 1] interval
+        # assuming all actions lie in range [0, 1]
         # init to random values
         key, key_init_a = jax.random.split(key)
         a = jax.random.uniform(key_init_a, (sample_batch_size, batch_size, action_size))
@@ -314,7 +314,7 @@ def infer_z_then_a(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConf
         a_init = jnp.stack((horizon - 1) * [jnp.stack(action_infer_batch_size * [a0])])
         # TODO: warmstart next inference based on last inferred action
     else:
-        a_init = jax.random.uniform( # TODO: assuming all action lie in [0, 1] interval
+        a_init = jax.random.uniform( # TODO: assuming all action lie in range [0, 1]
             key_init_a,
             (horizon - 1, action_infer_batch_size, batch_size, action_size))
     _, a = jax.lax.scan(

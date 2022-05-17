@@ -65,6 +65,7 @@ _C.TRAIN = ml_collections.ConfigDict()
 _C.TRAIN.MAX_DEVICES_PER_HOST = 8
 _C.TRAIN.EBM = ml_collections.ConfigDict()
 _C.TRAIN.EBM.WARMSTART_INFERENCE = False
+_C.TRAIN.EBM.NEGATIVE_ACTION_SAMPLE_SIZE = 64
 _C.TRAIN.EBM.ACTION_INFER_BATCH_SIZE = 64
 _C.TRAIN.EBM.LOSS_NAME = "loss_ML_KL" # from [loss_ML, loss_ML_KL, loss_L2, loss_L2_KL]
 _C.TRAIN.EBM.DATA_SIZE = 1e8 # in case of limited experience

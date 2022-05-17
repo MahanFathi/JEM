@@ -16,13 +16,35 @@ def _calc_action_distance_batched_a(action_pred, action, discount):
     # TODO: either support normalized action, or remove it altogether
     return jnp.mean(discount ** jnp.arange(action.shape[1]) * jnp.linalg.norm(action - action_pred, axis=-1))
 
+
 def _calc_action_distance(action_pred, action, discount):
     # TODO: either support normalized action, or remove it altogether
     return jnp.mean(discount ** jnp.arange(action.shape[1]) * jnp.linalg.norm(action - action_pred, axis=-1))
 
 
-def _calc_loss_ml_kl_l2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
+def _calc_loss_contrastive(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
 
+    batch_size, horizon, action_size = data.action.shape
+
+    key, key_infer_z = jax.random.split(key)
+    z = infer_z(params, data, key_infer_z, cfg, ebm)
+
+    key, key_sample_a = jax.random.split(key)
+    a_sample_size = cfg.TRAIN.EBM.NEGATIVE_ACTION_SAMPLE_SIZE
+    negative_a = jax.random.uniform(key_sample_a, (a_sample_size, batch_size, horizon - 1, action_size)) # TODO: assuming actions lie in range [0, 1]
+
+    # NOTE: we allow gradient to flow inside z(\theta)
+    loss_contrastive_positive = ebm.apply(params, data.observation[:, 1:, :], z, data.action[:, 1:, :])
+    loss_contrastive_negative = ebm.apply_batch_a(params, data.observation[:, 1:, :], z, negative_a).mean(axis=0)
+
+    loss_contrastive = loss_contrastive_positive - loss_contrastive_negative # TODO: optionally add softmax
+
+    return {
+        "loss_contrastive": loss_contrastive,
+    }
+
+
+def _calc_loss_ml_kl_l2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
     # infer z and a
     #   z: (batch_size, option_size)
     #   a: (action_infer_batch_size, batch_size, horizon - 1, action_size)
@@ -70,6 +92,12 @@ def loss_L2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict,
     }
 
 
+def loss_contrastive(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
+    losses = _calc_loss_contrastive(params, data, key, cfg, ebm)
+    loss_contrastive = losses["loss_contrastive"]
+    return loss_contrastive, {**{"loss": loss_contrastive}, **losses}
+
+
 def loss_ML(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
     losses = _calc_loss_ml_kl_l2(params, data, key, cfg, ebm) # TODO: fix, not efficient
     loss_ml = losses["loss_ml"]
@@ -97,11 +125,11 @@ def eval_action_l2(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConf
     # infer z and a
     #   z: (batch_size, option_size)
     #   a: (batch_size, horizon - 1, action_size)
-    key, key_infer = jax.random.split(key)
+    key, key_infer_z = jax.random.split(key)
 
     batch_size, horizon, _ = data.observation.shape
 
-    z = infer_z(params, data, key, cfg, ebm, langevin_gd=False)
+    z = infer_z(params, data, key_infer_z, cfg, ebm, langevin_gd=False)
     stacked_z = jnp.stack((horizon - 1) * [z]).swapaxes(0, 1) # (batch_size, horizon - 1, option_size)
 
     a = ebm.infer_batch_a_derivative_free(params, data.observation[:, 1:, :], stacked_z, jax.random.split(key, batch_size)) # (batch_size, horizon - 1, action_size)
