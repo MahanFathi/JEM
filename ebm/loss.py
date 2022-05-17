@@ -28,6 +28,7 @@ def _calc_loss_contrastive(params: Params, data: StepData, key: PRNGKey, cfg: Fr
 
     key, key_infer_z = jax.random.split(key)
     z = infer_z(params, data, key_infer_z, cfg, ebm)
+    z = jnp.stack([z] * (horizon - 1), axis=1) # (batch_size, horizon - 1, option_size)
 
     key, key_sample_a = jax.random.split(key)
     a_sample_size = cfg.TRAIN.EBM.NEGATIVE_ACTION_SAMPLE_SIZE
