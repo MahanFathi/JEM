@@ -70,7 +70,7 @@ def _calc_loss_ml_kl_l2(params: Params, data: StepData, key: PRNGKey, cfg: Froze
     z = jnp.stack([z] * (horizon - 1), axis=1) # (batch_size, horizon - 1, option_size)
 
     # calc hinge mask
-    hinge_mask = _calc_hinge_mask(a, data.action[:, 1:, 0], cfg.TRAIN.EBM.HINGE_EPS)
+    hinge_mask = _calc_hinge_mask(a, data.action[:, 1:, :], cfg.TRAIN.EBM.HINGE_EPS)
 
     # calc loss ml
     discount = cfg.TRAIN.EBM.DISCOUNT
