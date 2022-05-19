@@ -22,6 +22,15 @@ def _calc_action_distance(action_pred, action, discount):
     return jnp.mean(discount ** jnp.arange(action.shape[1]) * jnp.linalg.norm(action - action_pred, axis=-1))
 
 
+@partial(jax.vmap, in_axes=(0, None, None))
+def _calc_hinge_mask(action_pred, action, eps):
+    """
+    action_pred: (action_infer_batch_size[vmapped], batch_size, horizon - 1, action_size)
+    action: (batch_size, horizon - 1, action_size)
+    """
+    return jnp.linalg.norm(action - action_pred, axis=-1) > eps
+
+
 def _calc_loss_contrastive(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConfigDict, ebm: EBM):
 
     batch_size, horizon, action_size = data.action.shape
@@ -60,11 +69,14 @@ def _calc_loss_ml_kl_l2(params: Params, data: StepData, key: PRNGKey, cfg: Froze
     horizon = a.shape[-2] + 1
     z = jnp.stack([z] * (horizon - 1), axis=1) # (batch_size, horizon - 1, option_size)
 
+    # calc hinge mask
+    hinge_mask = _calc_hinge_mask(a, data.action[:, 1:, 0], cfg.TRAIN.EBM.HINGE_EPS)
+
     # calc loss ml
     discount = cfg.TRAIN.EBM.DISCOUNT
     loss_ml = discount ** jnp.arange(horizon - 1) * jax.nn.softplus(
         ebm.apply(params, data.observation[:, 1:, :], z, data.action[:, 1:, :]) -
-        ebm.apply_batch_a(params, data.observation[:, 1:, :], z, jax.lax.stop_gradient(a)).mean(axis=0)
+        (ebm.apply_batch_a(params, data.observation[:, 1:, :], z, jax.lax.stop_gradient(a)) * hinge_mask).mean(axis=0)
     ).mean(axis=0)
     loss_ml = loss_ml.mean()
 
