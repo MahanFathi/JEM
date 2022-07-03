@@ -24,8 +24,8 @@ class ParticleAndTargetEnv(BaseEnv):
         self.observation_space = self._create_observation_space()
         self._observation_size = 2 * self.n_dim
         self._action_size = self.n_dim
-        self.action_space = spaces.Box(low=0., high=1., shape=(self.n_dim,), dtype=np.float32)
-        self.particle_step_size = 0.05 # actions are the displacement of the particle
+        self.action_space = spaces.Box(low=-1, high=1., shape=(self.n_dim,), dtype=np.float32)
+        self.particle_step_size = 0.1 # actions are the displacement of the particle
         self.reset()
 
 
@@ -56,10 +56,9 @@ class ParticleAndTargetEnv(BaseEnv):
 
     @partial(jax.jit, static_argnums=(0, ))
     def step(self, state: jnp.ndarray, action: jnp.ndarray):
-        angle = action[0] * 2 * jnp.pi
-        step_size = action[1] * self.particle_step_size
+        displacement = action * self.particle_step_size
         pos_agent, pos_target = jnp.split(state, 2)
-        pos_agent += jnp.array([jnp.cos(angle), jnp.sin(angle)]) * step_size
+        pos_agent += displacement
         state = jnp.concatenate([pos_agent, pos_target])
         done = False
         reward = self._get_reward()
@@ -74,43 +73,41 @@ class ParticleAndTargetEnv(BaseEnv):
 @jax.jit
 def move_towards_target(state: jnp.ndarray):
     pos_agent, pos_target = jnp.split(state, 2)
-    dir = pos_target - pos_agent
-    angle = jnp.arctan2(*dir[::-1])
-    angle += 2 * jnp.pi
-    angle = jnp.mod(angle, 2 * jnp.pi)
-    return jnp.array([angle / (2 * jnp.pi), 1.])
+    vec = pos_target - pos_agent
+    direction = vec / jnp.linalg.norm(vec)
+    return direction
 
 
 @jax.jit
 def move_away_from_target(state: jnp.ndarray):
     pos_agent, pos_target = jnp.split(state, 2)
-    dir = pos_agent - pos_target
-    angle = jnp.arctan2(*dir[::-1])
-    angle += 2 * jnp.pi
-    angle = jnp.mod(angle, 2 * jnp.pi)
-    return jnp.array([angle / (2 * jnp.pi), 1.])
+    vec = pos_target - pos_agent
+    direction = vec / jnp.linalg.norm(vec)
+    return -direction
 
 
 @jax.jit
 def circle_target_clockwise(state: jnp.ndarray):
     pos_agent, pos_target = jnp.split(state, 2)
-    dir = pos_target - pos_agent
-    angle = jnp.arctan2(*dir[::-1])
-    angle += 2 * jnp.pi
-    angle -= jnp.pi / 2.
-    angle = jnp.mod(angle, 2 * jnp.pi)
-    return jnp.array([angle / (2 * jnp.pi), 1.])
+    vec = pos_target - pos_agent
+    direction = vec / jnp.linalg.norm(vec)
+    clockwise_dir = jnp.cross(
+        jnp.append(direction, jnp.array([1.])),
+        jnp.array([0., 0., -1.]),
+    )[:2]
+    return clockwise_dir
 
 
 @jax.jit
 def circle_target_counterclockwise(state: jnp.ndarray):
     pos_agent, pos_target = jnp.split(state, 2)
-    dir = pos_target - pos_agent
-    angle = jnp.arctan2(*dir[::-1])
-    angle += 2 * jnp.pi
-    angle += jnp.pi / 2.
-    angle = jnp.mod(angle, 2 * jnp.pi)
-    return jnp.array([angle / (2 * jnp.pi), 1.])
+    vec = pos_target - pos_agent
+    direction = vec / jnp.linalg.norm(vec)
+    counterclockwise_dir = jnp.cross(
+        jnp.append(direction, jnp.array([1.])),
+        jnp.array([0., 0., 1.]),
+    )[:2]
+    return counterclockwise_dir
 
 
 # sampler
