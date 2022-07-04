@@ -349,7 +349,10 @@ def infer_z_then_a(params: Params, data: StepData, key: PRNGKey, cfg: FrozenConf
     else:
         a_init = jax.random.uniform( # TODO: assuming all action lie in range [0, 1]
             key_init_a,
-            (horizon - 1, action_infer_batch_size, batch_size, action_size))
+            (horizon - 1, action_infer_batch_size, batch_size, action_size),
+            minval=-1.,
+            maxval=1.,
+        )
     _, a = jax.lax.scan(
         ebm.scan_to_infer_multiple_batch_a, (params, z, key_infer_a, langevin_gd),
         StepData(
