@@ -172,19 +172,19 @@ class EBM(object):
     def _infer_z_jaxopt(self, params: Params, s: jnp.ndarray, z: jnp.ndarray, a: jnp.ndarray, key: PRNGKey, langevin_gd: bool = None):
         optimizer = getattr(jaxopt, self.cfg.EBM.JAXOPT.OPTIMIZER)
         solver = optimizer(
-            fun=lambda z, params, s, a: self.apply(params, s, z, a),
-            maxiter=self.cfg.EBM.JAXOPT.MAXITER, implicit_diff= self.cfg.EBM.JAXOPT.IMP_DIFF,
+            fun=lambda z, params_ebm, s, a: self.apply(params_ebm, s, z, a),
+            maxiter=self.cfg.EBM.JAXOPT.MAXITER, implicit_diff=self.cfg.EBM.JAXOPT.IMP_DIFF,
         )
-        return solver.run(z, params=params, s=s, a=a).params
+        return solver.run(z, params_ebm=params, s=s, a=a).params
 
 
     def _infer_a_jaxopt(self, params: Params, s: jnp.ndarray, z: jnp.ndarray, a: jnp.ndarray, key: PRNGKey, langevin_gd: bool = None):
         optimizer = getattr(jaxopt, self.cfg.EBM.JAXOPT.OPTIMIZER)
         solver = optimizer(
-            fun=lambda a, params, s, z: self.apply(params, s, z, a),
+            fun=lambda a, params_ebm, s, z: self.apply(params_ebm, s, z, a),
             maxiter=self.cfg.EBM.JAXOPT.MAXITER, implicit_diff= self.cfg.EBM.JAXOPT.IMP_DIFF,
         )
-        return solver.run(a, params=params, s=s, z=z).params
+        return solver.run(a, params_ebm=params, s=s, z=z).params
 
 
     def infer_z_and_a(self, params: Params, s: jnp.ndarray, z: jnp.ndarray, a: jnp.ndarray, key: PRNGKey, langevin_gd: bool = None):
