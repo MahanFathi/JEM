@@ -2,6 +2,7 @@ from functools import partial
 
 import jax
 from jax import numpy as jnp
+import jaxopt
 from ml_collections import FrozenConfigDict
 
 from envs.base_env import BaseEnv
