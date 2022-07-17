@@ -43,6 +43,10 @@ class EBM(object):
             self.dedz = self._dedz
             self.deda = self._deda
 
+        # pick inner optimizer
+        self.infer_z = self._infer_z_jaxopt if cfg.EBM.JAXOPT.JAXOPT else self._infer_z
+        self.infer_a = self._infer_a_jaxopt if cfg.EBM.JAXOPT.JAXOPT else self._infer_a
+
         # get the energies for fixed (s, z) and a batch of actions
         self.apply_batch_a = jax.vmap(self.apply,
                                       in_axes=(None, None, None, 0))
@@ -140,7 +144,7 @@ class EBM(object):
         return (params, s, z, a, key, langevin_gd), ()
 
 
-    def infer_z(self, params: Params, s: jnp.ndarray, z: jnp.ndarray, a: jnp.ndarray, key: PRNGKey, langevin_gd: bool = None):
+    def _infer_z(self, params: Params, s: jnp.ndarray, z: jnp.ndarray, a: jnp.ndarray, key: PRNGKey, langevin_gd: bool = None):
 
         if langevin_gd is None:
             langevin_gd = self.cfg.EBM.LANGEVIN_GD
@@ -152,7 +156,7 @@ class EBM(object):
         return z
 
 
-    def infer_a(self, params: Params, s: jnp.ndarray, z: jnp.ndarray, a: jnp.ndarray, key: PRNGKey, langevin_gd: bool = None):
+    def _infer_a(self, params: Params, s: jnp.ndarray, z: jnp.ndarray, a: jnp.ndarray, key: PRNGKey, langevin_gd: bool = None):
 
         if langevin_gd is None:
             langevin_gd = self.cfg.EBM.LANGEVIN_GD
@@ -162,6 +166,24 @@ class EBM(object):
             (params, s, z, a, key, langevin_gd), (), self.cfg.EBM.K)
 
         return a
+
+
+    def _infer_z_jaxopt(self, params: Params, s: jnp.ndarray, z: jnp.ndarray, a: jnp.ndarray, key: PRNGKey, langevin_gd: bool = None):
+        optimizer = getattr(jaxopt, self.cfg.EBM.JAXOPT.OPTIMIZER)
+        solver = optimizer(
+            fun=lambda z, params, s, a: self.apply(params, s, z, a),
+            maxiter=self.EBM.JAXOPT.MAXITER, implicit_diff= self.EBM.JAXOPT.IMP_DIFF,
+        )
+        return solver.run(z, params=params, s=s, a=a).params
+
+
+    def _infer_a_jaxopt(self, params: Params, s: jnp.ndarray, z: jnp.ndarray, a: jnp.ndarray, key: PRNGKey, langevin_gd: bool = None):
+        optimizer = getattr(jaxopt, self.cfg.EBM.JAXOPT.OPTIMIZER)
+        solver = optimizer(
+            fun=lambda a, params, s, z: self.apply(params, s, z, a),
+            maxiter=self.EBM.JAXOPT.MAXITER, implicit_diff= self.EBM.JAXOPT.IMP_DIFF,
+        )
+        return solver.run(a, params=params, s=s, z=z).params
 
 
     def infer_z_and_a(self, params: Params, s: jnp.ndarray, z: jnp.ndarray, a: jnp.ndarray, key: PRNGKey, langevin_gd: bool = None):

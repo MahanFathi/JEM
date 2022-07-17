@@ -32,6 +32,11 @@ _C.SAMPLER.BATCH_SIZE = 16
 # ENERGY-BASED MODEL
 # ---------------------------------------------------------------------------- #
 _C.EBM = ml_collections.ConfigDict()
+_C.EBM.JAXOPT = ml_collections.ConfigDict()
+_C.EBM.JAXOPT.JAXOPT = True # use `jaxopt` for inner optimization
+_C.EBM.JAXOPT.OPTIMIZER = "GradientDescent"
+_C.EBM.JAXOPT.MAXITER = 20 # NOTE: is this same as `EBM.K`?
+_C.EBM.JAXOPT.IMP_DIFF = True # Implicit Differentiation
 _C.EBM.ARCH = "arch0" # {"arch0": simple_feed_forward, "arch1": multipe_mlps}
 _C.EBM.ARCH0 = ml_collections.ConfigDict()
 _C.EBM.ARCH0.LAYERS = [64, 64, 64, 16]
