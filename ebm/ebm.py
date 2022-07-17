@@ -173,7 +173,7 @@ class EBM(object):
         optimizer = getattr(jaxopt, self.cfg.EBM.JAXOPT.OPTIMIZER)
         solver = optimizer(
             fun=lambda z, params, s, a: self.apply(params, s, z, a),
-            maxiter=self.EBM.JAXOPT.MAXITER, implicit_diff= self.EBM.JAXOPT.IMP_DIFF,
+            maxiter=self.cfg.EBM.JAXOPT.MAXITER, implicit_diff= self.cfg.EBM.JAXOPT.IMP_DIFF,
         )
         return solver.run(z, params=params, s=s, a=a).params
 
@@ -182,7 +182,7 @@ class EBM(object):
         optimizer = getattr(jaxopt, self.cfg.EBM.JAXOPT.OPTIMIZER)
         solver = optimizer(
             fun=lambda a, params, s, z: self.apply(params, s, z, a),
-            maxiter=self.EBM.JAXOPT.MAXITER, implicit_diff= self.EBM.JAXOPT.IMP_DIFF,
+            maxiter=self.cfg.EBM.JAXOPT.MAXITER, implicit_diff= self.cfg.EBM.JAXOPT.IMP_DIFF,
         )
         return solver.run(a, params=params, s=s, z=z).params
 
