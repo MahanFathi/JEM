@@ -45,6 +45,9 @@ class EBM(object):
             self.deda = self._deda
 
         # pick inner optimizer
+        self._make_jaxopt_solvers()
+        # self._infer_z_jaxopt = jax.vmap(self._infer_z_jaxopt, in_axes=(None, 0, 0, 0, None, None))
+        # self._infer_a_jaxopt = jax.vmap(self._infer_a_jaxopt, in_axes=(None, 0, 0, 0, None, None))
         self.infer_z = self._infer_z_jaxopt if cfg.EBM.JAXOPT.JAXOPT else self._infer_z
         self.infer_a = self._infer_a_jaxopt if cfg.EBM.JAXOPT.JAXOPT else self._infer_a
 
@@ -72,6 +75,18 @@ class EBM(object):
     @partial(jax.jit, static_argnums=(0,))
     def apply(self, params: Params, s: jnp.ndarray, z: jnp.ndarray, a: jnp.ndarray):
         return self._ebm_net.apply(params, s, z, a).squeeze(axis=-1) ** 2 # (batch_size, 1).squeeze()
+
+
+    def _make_jaxopt_solvers(self, ):
+        optimizer = getattr(jaxopt, self.cfg.EBM.JAXOPT.OPTIMIZER)
+        self._jaxopt_solver_z = optimizer(
+            fun=lambda z, params_ebm, s, a: self.apply(params_ebm, s, z, a),
+            maxiter=self.cfg.EBM.JAXOPT.MAXITER, implicit_diff=self.cfg.EBM.JAXOPT.IMP_DIFF,
+        )
+        self._jaxopt_solver_a = optimizer(
+            fun=lambda a, params_ebm, s, z: self.apply(params_ebm, s, z, a),
+            maxiter=self.cfg.EBM.JAXOPT.MAXITER, implicit_diff=self.cfg.EBM.JAXOPT.IMP_DIFF,
+        )
 
 
     @partial(jax.jit, static_argnums=(0, ))
@@ -169,22 +184,14 @@ class EBM(object):
         return a
 
 
+    @partial(jax.vmap, in_axes=(None, None, 0, 0, 0, None, None))
     def _infer_z_jaxopt(self, params: Params, s: jnp.ndarray, z: jnp.ndarray, a: jnp.ndarray, key: PRNGKey, langevin_gd: bool = None):
-        optimizer = getattr(jaxopt, self.cfg.EBM.JAXOPT.OPTIMIZER)
-        solver = optimizer(
-            fun=lambda z, params_ebm, s, a: self.apply(params_ebm, s, z, a),
-            maxiter=self.cfg.EBM.JAXOPT.MAXITER, implicit_diff=self.cfg.EBM.JAXOPT.IMP_DIFF,
-        )
-        return solver.run(z, params_ebm=params, s=s, a=a).params
+        return self._jaxopt_solver_z.run(z, params_ebm=params, s=s, a=a).params
 
 
+    @partial(jax.vmap, in_axes=(None, None, 0, 0, 0, None, None))
     def _infer_a_jaxopt(self, params: Params, s: jnp.ndarray, z: jnp.ndarray, a: jnp.ndarray, key: PRNGKey, langevin_gd: bool = None):
-        optimizer = getattr(jaxopt, self.cfg.EBM.JAXOPT.OPTIMIZER)
-        solver = optimizer(
-            fun=lambda a, params_ebm, s, z: self.apply(params_ebm, s, z, a),
-            maxiter=self.cfg.EBM.JAXOPT.MAXITER, implicit_diff= self.cfg.EBM.JAXOPT.IMP_DIFF,
-        )
-        return solver.run(a, params_ebm=params, s=s, z=z).params
+        return self._jaxopt_solver_a.run(a, params_ebm=params, s=s, z=z).params
 
 
     def infer_z_and_a(self, params: Params, s: jnp.ndarray, z: jnp.ndarray, a: jnp.ndarray, key: PRNGKey, langevin_gd: bool = None):
